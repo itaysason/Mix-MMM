@@ -5,8 +5,12 @@ from scipy.special import logsumexp
 class Mix:
     def __init__(self, num_clusters, num_topics, init_params=None, epsilon=1e-4, max_iter=1e5):
         """
-        :param k: number of topics
-        :param m: number of mutations
+
+        :param num_clusters: Positive integer, number of clusters to learn.
+        :param num_topics: Positive integer, number of topics to learn.
+        :param init_params: Dictionary with keys e, pi, w and values for initial parameters.
+        :param epsilon: Positive small number, the stop criterion for fit.
+        :param max_iter: Positive integer, maximum number of iterations for fit.
         """
         self.num_topics = num_topics
         self.num_clusters = num_clusters
@@ -165,6 +169,13 @@ class Mix:
         return log_likelihood
 
     def predict(self, data):
+        """
+
+        :param data: ndarray (N, num_words) of non-negative integers.
+        :return clusters: ndarray (N,) of integers representing the clusters.
+        :return topics: ndarray (N, num_topics) of non-negative integers, counts of topics in the data.
+        :return probabilities: ndarray (N,), probabilities[i] = log(Pr[sample[i], topics[i], clusters[i]])
+        """
         num_samples = len(data)
         clusters = np.zeros(num_samples, dtype='int')
         probabilites = np.log(np.zeros(num_samples))
