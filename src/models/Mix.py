@@ -72,47 +72,54 @@ class Mix:
 
         return log_expected_pi, log_expected_e, log_likelihood
 
-    def expectation_step(self, algo):
+    def expectation_step(self):
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
-        num_clusters, num_topics, num_words = self.num_clusters, self.num_topics, self.num_words
-        log_likelihood = 0
-        log_expected_e = np.log(np.zeros((num_topics, num_words)))
-        log_expected_pi = np.empty((num_clusters, num_topics))
-        expected_w = np.empty(num_clusters)
-        if algo == 1:
-            # use the max function
-            sample_to_cluster = np.argmax(likelihood_sample_cluster, 1)
-            log_likelihood += np.sum(np.max(likelihood_sample_cluster, 1))
-            for l in range(self.num_clusters):
-                samples_in_cluster = sample_to_cluster == l
-                log_expected_pi[l] = logsumexp(expected_pi_sample_cluster[l, samples_in_cluster], 0)
-                curr_log_expected_e = logsumexp(expected_e_sample_cluster[l, samples_in_cluster], 0)
-                np.logaddexp(curr_log_expected_e, log_expected_e, log_expected_e)
-                expected_w[l] = likelihood_sample_cluster.sum(0)
-        elif algo == 2:
-            likelihood_sample_cluster += self.w
-            tmp = logsumexp(likelihood_sample_cluster, 1, keepdims=True)
-            log_likelihood = np.sum(tmp)
-            likelihood_sample_cluster -= tmp
-            expected_pi_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis]
-            expected_e_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis, np.newaxis]
-            log_expected_pi = logsumexp(expected_pi_sample_cluster, 1)
-            log_expected_e = logsumexp(expected_e_sample_cluster, (0, 1))
-            expected_w = logsumexp(likelihood_sample_cluster, 0)
-        else:
-            raise NotImplementedError('Not implemented algorithm {}'.format(algo))
+
+        likelihood_sample_cluster += self.w
+        tmp = logsumexp(likelihood_sample_cluster, 1, keepdims=True)
+        log_likelihood = np.sum(tmp)
+        likelihood_sample_cluster -= tmp
+        expected_pi_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis]
+        expected_e_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis, np.newaxis]
+        log_expected_pi = logsumexp(expected_pi_sample_cluster, 1)
+        log_expected_e = logsumexp(expected_e_sample_cluster, (0, 1))
+        expected_w = logsumexp(likelihood_sample_cluster, 0)
         return expected_w, log_expected_pi, log_expected_e, log_likelihood
 
-    def maximization_step(self, log_expected_w=None, log_expected_pi=None, log_expected_e=None):
-        w = log_expected_w - logsumexp(log_expected_w) if log_expected_w is not None else self.w
-        pi = log_expected_pi - logsumexp(log_expected_pi, axis=1, keepdims=True) if log_expected_pi is not None else self.pi
-        # e = log_expected_e - logsumexp(log_expected_e, axis=1, keepdims=True) if log_expected_e is not None else self.e
-        return w, pi, self.e
+    def maximization_step(self, log_expected_w, log_expected_pi, log_expected_e, params):
+        if 'w' in params:
+            w = log_expected_w - logsumexp(log_expected_w)
+        else:
+            w = self.w
+        if 'pi' in params:
+            pi = log_expected_pi - logsumexp(log_expected_pi, axis=1, keepdims=True)
+        else:
+            pi = self.pi
+        if 'e' in params:
+            e = log_expected_e - logsumexp(log_expected_e, axis=1, keepdims=True)
+        else:
+            e = self.e
+        return w, pi, e
+
+    def refit(self, data):
+        """
+        Fitting only the clusters (pi) and the weights (w).
+        :param data:
+        :return:
+        """
+        if self.e is None:
+            raise ValueError('e was not set, can not refit')
+        return self._fit(data, ['w', 'pi'])
 
     def fit(self, data):
+        """
+        Fitting all the parameters of the model.
+        :param data:
+        :return:
+        """
         return self._fit(data, ['w', 'pi', 'e'])
 
-    def _fit(self, data, params, algo=2):
+    def _fit(self, data, params):
         self.set_data(data)
         if self.num_words is None:
             self.num_words = data.shape[1]
@@ -129,19 +136,16 @@ class Mix:
         self.pi = np.log(self.pi)
         self.w = np.log(self.w)
         self.e = np.log(self.e)
-        values_list = {'log_likelihood'}
-        for param in params:
-            values_list.add(param)
-        expected_w, log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step(algo)
-        start_log_likelihood = prev_log_likelihood
+
+        expected_w, log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step()
         log_likelihood = prev_log_likelihood
         for iteration in range(self.max_iter):
             print(log_likelihood)
             # maximization step
-            self.w, self.pi, self.e = self.maximization_step(expected_w, log_expected_pi, log_expected_e)
+            self.w, self.pi, self.e = self.maximization_step(expected_w, log_expected_pi, log_expected_e, params)
 
             # expectation step
-            expected_w, log_expected_pi, log_expected_e, log_likelihood = self.expectation_step(algo)
+            expected_w, log_expected_pi, log_expected_e, log_likelihood = self.expectation_step()
 
             if log_likelihood - prev_log_likelihood < self.epsilon:
                 break
@@ -151,22 +155,13 @@ class Mix:
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
         self.w = np.exp(self.w)
-        return start_log_likelihood - log_likelihood, self.pi, self.e
+        return log_likelihood
 
     def log_likelihood(self, data):
-        self.data = data
-        self.log_data = np.log(data)
-        e = self.e.copy()
-        pi = self.pi.copy()
-        w = self.w.copy()
-        self.e = np.log(self.e)
-        self.pi = np.log(self.pi)
-        self.w = np.log(self.w)
-        _, _, _, log_likelihood = self.expectation_step(2)
-        self.pi = pi
-        self.e = e
-        self.w = w
-        return log_likelihood
+        max_iter, self.max_iter = self.max_iter, 0
+        ll = self.fit(data)
+        self.max_iter = max_iter
+        return ll
 
     def predict(self, data):
         """
