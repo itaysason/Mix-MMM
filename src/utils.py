@@ -2,6 +2,7 @@ import json
 import numpy as np
 from src.models.Mix import Mix
 import pandas as pd
+import os
 
 
 def save_json(file_name, dict_to_save):
@@ -16,9 +17,19 @@ def load_json(file_name):
 def get_data(dataset):
     if dataset == 'ICGC-BRCA':
         data = np.load('data/BRCA_counts.npy')
+        print(type(data))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     else:
-        raise ValueError('{} is not a valid dataset'.format(dataset))
+        dat_f = "data/processed/%s_counts.npy"%dataset
+        data = np.array(np.load(dat_f, allow_pickle=True),dtype=np.float32)
+        if os.path.isfile(dat_f):
+            pass
+        else:
+            raise FileNotFoundError('%s is not found'%dat_f)
+        #TODO: the active signatures may need to revise according to cancer types
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    #else:
+    #    raise ValueError('{} is not a valid dataset'.format(dataset))
     active_signatures = np.array(active_signatures) - 1
     return data, active_signatures
 
