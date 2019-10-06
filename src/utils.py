@@ -26,8 +26,7 @@ def get_data(dataset):
             pass
         else:
             raise FileNotFoundError('%s is not found'%dat_f)
-        #TODO: the active signatures may need to revise according to cancer types
-        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+        active_signatures = [1, 2, 5, 10, 13]
     #else:
     #    raise ValueError('{} is not a valid dataset'.format(dataset))
     active_signatures = np.array(active_signatures) - 1
