@@ -20,8 +20,8 @@ def get_data(dataset):
         print(type(data))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     else:
-        dat_f = "data/processed/%s_counts.npy"%dataset
-        data = np.array(np.load(dat_f, allow_pickle=True),dtype=np.float32)
+        dat_f = "data/processed/%s_counts.npy" % dataset
+        data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
         if os.path.isfile(dat_f):
             pass
         else:

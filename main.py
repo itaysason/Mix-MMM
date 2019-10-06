@@ -39,7 +39,7 @@ def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, 
         signatures = None
 
     model_name = 'mix_' + str(num_clusters).zfill(3) + '_' + str(num_signatures).zfill(3)
-    out_dir = os.path.join(out_dir, dataset_name, use_cosmic_dir, model_name, str(num_signatures))
+    out_dir = os.path.join(out_dir, dataset_name, use_cosmic_dir, model_name)
 
     try:
         os.makedirs(out_dir)
