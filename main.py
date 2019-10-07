@@ -1,4 +1,4 @@
-from src.utils import save_json, get_cosmic_signatures, load_json, get_data
+from src.utils import save_json, get_cosmic_signatures, get_data
 from src.experiments import split_train_test_sample_cv, train_mix, train_test_mix
 import click
 import time
@@ -22,12 +22,12 @@ def simple_cli(debug, verbosity):
 @click.option('--num_signatures', type=int, default=0)
 @click.option('--random_seed', type=int, default=0)
 @click.option('--max_iterations', type=int, default=10000)
-@click.option('--epsilon', type=float, default=1e-15)
+@click.option('--epsilon', type=float, default=1e-10)
 @click.option('--out_dir', type=str, default='experiments/trained_models')
 def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, max_iterations, epsilon, out_dir):
     use_cosmic_dir = 'refit' if use_cosmic else 'denovo'
     dataset_name = dataset
-    dataset, active_signatures = get_data(dataset)
+    data, active_signatures = get_data(dataset)
     if use_cosmic:
         num_signatures = len(active_signatures)
         signatures = get_cosmic_signatures()[active_signatures]
@@ -53,7 +53,7 @@ def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, 
             dataset_name, model_name, use_cosmic, num_signatures, random_seed))
         return
 
-    model, ll = train_mix(dataset, num_clusters, num_signatures, signatures, random_seed, epsilon, max_iterations)
+    model, ll = train_mix(data, num_clusters, num_signatures, signatures, random_seed, epsilon, max_iterations)
     parameters = model.get_params()
 
     parameters['w'] = parameters['w'].tolist()
@@ -73,7 +73,7 @@ def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, 
 @click.option('--num_signatures', type=int, default=0)
 @click.option('--shuffle_seed', type=int, default=0)
 @click.option('--random_seed', type=int, default=0)
-@click.option('--max_iterations', type=int, default=100)
+@click.option('--max_iterations', type=int, default=10000)
 @click.option('--epsilon', type=float, default=1e-10)
 @click.option('--out_dir', type=str, default='experiments/sampleCV')
 def sample_cv(dataset, num_clusters, use_cosmic, num_folds, fold, num_signatures, shuffle_seed, random_seed, max_iterations, epsilon, out_dir):
@@ -82,7 +82,7 @@ def sample_cv(dataset, num_clusters, use_cosmic, num_folds, fold, num_signatures
         raise ValueError('num_folds is {} but fold is {}'.format(num_folds, fold))
 
     dataset_name = dataset
-    dataset, active_signatures = get_data(dataset)
+    data, active_signatures = get_data(dataset)
     if use_cosmic:
         num_signatures = len(active_signatures)
         signatures = get_cosmic_signatures()[active_signatures]
@@ -114,7 +114,7 @@ def sample_cv(dataset, num_clusters, use_cosmic, num_folds, fold, num_signatures
                 dataset_name, model_name, num_folds, use_cosmic, i, num_signatures, shuffle_seed, random_seed))
             continue
 
-        train_data, test_data = split_train_test_sample_cv(dataset, num_folds, i, shuffle_seed)
+        train_data, test_data = split_train_test_sample_cv(data, num_folds, i, shuffle_seed)
 
         model, train_ll, test_ll = train_test_mix(train_data, test_data, num_clusters, num_signatures, signatures, random_seed, epsilon, max_iterations)
         parameters = model.get_params()
