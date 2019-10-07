@@ -2,6 +2,7 @@ experiments/
 data/processed/
 data/raw/
 .snakemake/
+.Snakefile.swp
 __pycache__/
 src/models/__pycache__/
 figures/

@@ -19,15 +19,44 @@ MSK_COUNT_FILE= expand(join(PROCESSED_DIR, '{ot_code}_counts.npy'), ot_code=OT_C
 MSK_VIEW_FILE = join(PROCESSED_DIR, 'oncotype_counts.txt')
 MSK_ID_FILE= expand(join(PROCESSED_DIR, '{ot_code}_sample_id.txt'), ot_code=OT_CODE)
 ###################SCRIPTS
+MAIN_SRC ="main.py"
 MSK_PRE_SRC = join(UTILS_DIR, 'msk_preprocess.py')
 MSK_VIEW_SRC = join(UTILS_DIR, 'msk_overview.py')
 #BOX_SRC = join(UTILS_DIR, 'box_plot.py')
+###################CONFIGURATIONS
+#dataset
+DATASET="MSK-ALL"
+#number of signatures
+NUM_SIG=4
+#number of clusters
+NUM_CLUSTERS=4
+#number of fold
+NUM_FOLD=5
+#use cosmic or not
+COSMIC_BOOL=1
+#max iterations
+MAX_ITER=10
+#random seed
+SEED=1234
 
-rule all:
+rule train:
+	shell:
+		"python {MAIN_SRC} train_model --dataset {DATASET} \
+--num_clusters {NUM_CLUSTERS} --use_cosmic {COSMIC_BOOL} --num_signatures {NUM_SIG} \
+--random_seed {SEED} --max_iterations {MAX_ITER}"
+
+rule samplecv:
+	run:
+		for fd in range(NUM_FOLD):
+			shell("python {MAIN_SRC} sampleCV --dataset {DATASET} \
+--num_clusters {NUM_CLUSTERS} --use_cosmic {COSMIC_BOOL} --num_folds {NUM_FOLD} \
+--fold %d --num_signatures {NUM_SIG} --max_iterations {MAX_ITER}"%fd)
+
+rule msk_all:
 	input:
 		MSK_COUNT_FILE,
-        MSK_ID_FILE,
-        MSK_VIEW_FILE
+		MSK_ID_FILE,
+		MSK_VIEW_FILE
 
 rule process_msk:
 	input:
