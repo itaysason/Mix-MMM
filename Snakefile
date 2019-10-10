@@ -35,7 +35,7 @@ NUM_FOLD=5
 #use cosmic or not
 COSMIC_BOOL=1
 #max iterations
-MAX_ITER=10
+MAX_ITER=1
 #random seed
 SEED=1234
 
@@ -50,7 +50,7 @@ rule samplecv:
 		for fd in range(NUM_FOLD):
 			shell("python {MAIN_SRC} sampleCV --dataset {DATASET} \
 --num_clusters {NUM_CLUSTERS} --use_cosmic {COSMIC_BOOL} --num_folds {NUM_FOLD} \
---fold %d --num_signatures {NUM_SIG} --max_iterations {MAX_ITER}"%fd)
+--fold %d --num_signatures {NUM_SIG} --random_seed {SEED} --max_iterations {MAX_ITER}"%fd)
 
 rule msk_all:
 	input:

@@ -38,7 +38,7 @@ def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, 
     else:
         signatures = None
 
-    model_name = 'mix_' + str(num_clusters).zfill(3) + '_' + str(num_signatures).zfill(3)
+    model_name = 'mix_' + str(num_clusters).zfill(3) + 'clusters' + '_' + str(num_signatures).zfill(3) + 'signatures'
     out_dir = os.path.join(out_dir, dataset_name, use_cosmic_dir, model_name)
 
     try:
@@ -47,7 +47,7 @@ def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, 
         pass
 
     random_seed = int(time.time()) if random_seed == 0 else random_seed
-    out_file = out_dir + "/" + str(random_seed)
+    out_file = out_dir + "/" + str(random_seed) + 'seed'
     if os.path.isfile(out_file + '.json'):
         print('Experiment with parameters {} {} {} {} {} already exist'.format(
             dataset_name, model_name, use_cosmic, num_signatures, random_seed))
@@ -94,13 +94,13 @@ def sample_cv(dataset, num_clusters, use_cosmic, num_folds, fold, num_signatures
     else:
         signatures = None
 
-    model_name = 'mix_' + str(num_clusters).zfill(3) + '_' + str(num_signatures).zfill(3)
-
+    #model_name = 'mix_' + str(num_clusters).zfill(3) + '_' + str(num_signatures).zfill(3)
+    model_name = 'mix_' + str(num_clusters).zfill(3) + 'clusters' + '_' + str(num_signatures).zfill(3) + 'signatures'
     for i in range(num_folds):
         if fold >= 0:
             i = fold
         use_cosmic_dir = 'refit' if use_cosmic else 'denovo'
-        curr_out_dir = os.path.join(out_dir, dataset_name, use_cosmic_dir, model_name, str(shuffle_seed), str(num_folds), str(i))
+        curr_out_dir = os.path.join(out_dir, dataset_name, use_cosmic_dir, model_name, str(shuffle_seed)+'seed', str(num_folds)+'folds', 'fold'+str(i))
 
         try:
             os.makedirs(curr_out_dir)
@@ -108,7 +108,7 @@ def sample_cv(dataset, num_clusters, use_cosmic, num_folds, fold, num_signatures
             pass
 
         random_seed = int(time.time()) if random_seed == 0 else random_seed
-        out_file = curr_out_dir + "/" + str(random_seed)
+        out_file = curr_out_dir + "/" + str(random_seed) + 'seed'
         if os.path.isfile(out_file + '.json'):
             print('Experiment with parameters {} {} {} {} {} {} {} {} already exist'.format(
                 dataset_name, model_name, num_folds, use_cosmic, i, num_signatures, shuffle_seed, random_seed))
