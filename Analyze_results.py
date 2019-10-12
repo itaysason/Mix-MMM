@@ -80,8 +80,8 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         if total_score > best_score:
                             best_score = total_score
                     if len(runs) > 0:
-                        num_sigs = int(model.split('_')[2])
-                        num_clusters = int(model.split('_')[1])
+                        num_sigs = int(model.split('_')[2][:3])
+                        num_clusters = int(model.split('_')[1][:3])
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
                         tmp.append(np.log(num_data_points) * num_params - 2 * best_score)
@@ -103,13 +103,13 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         if total_score > best_score:
                             best_score = total_score
                     if len(runs) > 0:
-                        num_sigs = int(model.split('_')[2])
-                        num_clusters = int(model.split('_')[1])
+                        num_sigs = int(model.split('_')[2][:3])
+                        num_clusters = int(model.split('_')[1][:3])
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters + (96 - 1) * num_sigs
                         # If we use smoothing I think we need to add the number of "data points" we added
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
                         tmp.append(np.log(num_data_points) * num_params - 2 * best_score)
-                        clusters.append(model.split('_')[1])
+                        clusters.append(num_clusters)
                         sigs.append(num_sigs)
                 print('\n')
                 clusters = np.array(clusters, dtype='int')
