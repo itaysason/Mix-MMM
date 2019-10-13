@@ -73,7 +73,7 @@ def trap_wgs(region_js, slim_wgsf, trap_mutf, other_mutf):
     with open(region_js) as in_f:
         region_dict =json.load(in_f)
     #trap mutations are those fall into MSK regions while other mutations are outside of the region
-    trap_mut = []
+    trap_mut_dict = dict()
     other_mut = []
     posi_ls = list(slim_wg_df['Start Position'])
     for i in range(len(posi_ls)):
@@ -95,34 +95,38 @@ def trap_wgs(region_js, slim_wgsf, trap_mutf, other_mutf):
         if trap_ind == False:
             other_mut.append(i)
         else:
-            trap_mut.append(i)
+            if slim_wg_df['Patient'][i] in trap_mut_dict.keys():
+                trap_mut_dict[slim_wg_df['Patient'][i]].append(i)
+            else:
+                trap_mut_dict[slim_wg_df['Patient'][i]] = [i]
     #rm duplicates
     other_mut = list(set(other_mut))
     with open(trap_mutf,'w') as out_f1:
-        for tm in trap_mut:
-            out_f1.write(str(tm) + '\n')
+        json.dump(trap_mut_dict, out_f1)
     with open(other_mutf,'w') as out_f2:
         for om in other_mut:
             out_f2.write(str(om) + '\n')     
 
 def downsize(trap_mutf, keep_mutf, denominator, seed=1234):
     """
-    a random generator selects mutations 1 out of 1000? Make sure the magnitude is comparable to MSK panels.
+    For each patient, a random generator selects mutations 1 out of denominator. Make sure the magnitude is comparable to MSK panels.
     INPUT: 
     trap_mutf: trapped mutations
     OUTPUT:
     keep_mutf: kept mutations
     """
     with open(trap_mutf) as in_f:
-        #read as a list
-        trap_ls = [line.rstrip('\n') for line in in_f.readlines()]
-    print("We have %d trapped mutations"%len(trap_ls))
+        trap_dict = json.load(in_f)
     random.seed(seed)
     keep_ls = []
-    for i in range(len(trap_ls)):
-       now = random.uniform(0,1) 
-       if now < 1.0/denominator:
-           keep_ls.append(trap_ls[i])
+    print("We have %d patients"%len(trap_dict.keys()))
+    for tk in trap_dict.keys():
+       all_mut = trap_dict[tk]
+       print("%d mutations are in this sample"%len(all_mut))
+       for am in all_mut:
+           now = random.uniform(0,1) 
+           if now < 1.0/denominator:
+               keep_ls.append(am)
     print("We select %d mutations"%len(keep_ls))
     with open(keep_mutf,'w') as out_f:
         for kl in keep_ls:
@@ -161,18 +165,17 @@ if __name__ == "__main__":
     msk_locf = join(msk_dir, 'msk_gene_loc.txt')
     slim_wgsf = join(msk_dir, 'slim_wgs.csv')
     region_js = join(msk_dir, 'region_dict.json')
-    trap_wgsf = join(msk_dir, 'trap_wgs.csv')
-    trap_mutf = join(msk_dir, 'trap_mut.csv')
+    trap_mutf = join(msk_dir, 'trap_mut.json')
     other_mutf = join(msk_dir, 'other_mut.csv')
     keep_mutf = join(msk_dir, 'keep_mut.csv')
-    denominator = 10
+    denominator = 100
     new_wgsf = join(msk_dir,'new_wgs_downsize%d.csv'%denominator)
     #Functions
     #select_msk(gene_f, ref_f, msk_locf)
     #merge_by_chrom(msk_locf, ref_f)
     #slim_wgs(wgsf, slim_wgsf)
     #trap_wgs(region_js, slim_wgsf, trap_mutf, other_mutf)
-    #downsize(trap_mutf, keep_mutf, denominator, seed=1234)
+    downsize(trap_mutf, keep_mutf, denominator, seed=1234)
     #get_simulated_maf(wgsf, new_wgsf, keep_mutf)
 
 
