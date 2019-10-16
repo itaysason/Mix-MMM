@@ -157,24 +157,24 @@ def get_simulated_maf(wgsf, new_wgsf, keep_mutf):
 
 if __name__ == "__main__":
     #file names
-    wgs_dir = "/Users/yuexichen/Downloads/lrgr_file/big_repo/mutation-signatures-data/mutations/ICGC/processed/standard"
-    wgsf = join(wgs_dir, "standard.ICGC-BRCA-EU_BRCA_22.WGS.tsv")
+    wgs_dir = "/Users/yuexichen/Downloads/lrgr_file/big_repo/mutation-signatures-data/mutations/PanCanAtlas/processed/standard"
+    wgsf = join(wgs_dir, "standard.TCGA-OV_OV_mc3.v0.2.8.WXS.tsv")
     msk_dir =  "/Users/yuexichen/Downloads/lrgr_file/mskfiles/"
     gene_f = join(msk_dir, "data_gene_panel_impact410.txt") 
     ref_f = gloc_f = join(msk_dir, "mart_export.txt")
     msk_locf = join(msk_dir, 'msk_gene_loc.txt')
-    slim_wgsf = join(msk_dir, 'slim_wgs.csv')
+    slim_wgsf = join(msk_dir, 'slim_wxs_ov.csv')
     region_js = join(msk_dir, 'region_dict.json')
-    trap_mutf = join(msk_dir, 'trap_mut.json')
-    other_mutf = join(msk_dir, 'other_mut.csv')
-    keep_mutf = join(msk_dir, 'keep_mut.csv')
-    denominator = 100
-    new_wgsf = join(msk_dir,'new_wgs_downsize%d.csv'%denominator)
+    trap_mutf = join(msk_dir, 'trap_mut_wxs_ov.json')
+    other_mutf = join(msk_dir, 'other_mut_wxs_ov.csv')
+    keep_mutf = join(msk_dir, 'keep_mut_wxs_ov.csv')
+    denominator = 1
+    new_wgsf = join(msk_dir,'wxs_ov_downsize%d.csv'%denominator)
     #Functions
     #select_msk(gene_f, ref_f, msk_locf)
     #merge_by_chrom(msk_locf, ref_f)
-    #slim_wgs(wgsf, slim_wgsf)
-    #trap_wgs(region_js, slim_wgsf, trap_mutf, other_mutf)
+    slim_wgs(wgsf, slim_wgsf)
+    trap_wgs(region_js, slim_wgsf, trap_mutf, other_mutf)
     downsize(trap_mutf, keep_mutf, denominator, seed=1234)
     get_simulated_maf(wgsf, new_wgsf, keep_mutf)
 

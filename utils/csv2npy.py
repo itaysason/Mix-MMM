@@ -5,9 +5,10 @@ import os
 from os.path import join
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-rd','--raw_dir',help='tsv file folders', default='data/raw/')
-parser.add_argument('-ot','--onco_tree', help='onco tree code',type=str, default='downsize_100')
-parser.add_argument('-od','--out_dir', help='processed numpy data dir', default='data/processed')
+parser.add_argument('-rd','--raw_dir',help='tsv file folders')
+parser.add_argument('-fn','--file_name',help='file name')
+parser.add_argument('-ot','--onco_tree', help='onco tree code',type=str)
+parser.add_argument('-od','--out_dir', help='processed numpy data dir',type=str)
 args = parser.parse_args()
 
 """
@@ -16,7 +17,7 @@ args = parser.parse_args()
 #        2. user id in txt format.
 """
 
-raw_f = join(args.raw_dir, 'WGS_100.tsv')
+raw_f = join(args.raw_dir, args.file_name)
 mut_pd = pd.read_csv(raw_f, sep='\t')
 mut_val = mut_pd.values[:,1:]
 print("Shape", np.shape(mut_val))
