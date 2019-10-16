@@ -1,7 +1,6 @@
 from src.utils import get_model, load_json, get_data
 import os
 import numpy as np
-from scipy.special import logsumexp
 import matplotlib.pyplot as plt
 
 
@@ -85,7 +84,7 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
                         tmp.append(np.log(num_data_points) * num_params - 2 * best_score)
-                        clusters.append(model.split('_')[1])
+                        clusters.append(num_clusters)
                 print('\n')
                 num_clusters = np.array(clusters, dtype='int')
                 tmp = np.array(tmp)
