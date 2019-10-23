@@ -1,0 +1,55 @@
+---
+title: "survival_analysis"
+author: "Yuexi (Tracy) Chen"
+date: "10/22/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r data}
+# input: WXS sample id, TCGA clinical information file
+# output: a csv file with columns = ["id","status","time", "age", "clinical_stage"]
+# id	survival_status	survival_days	age_days	clinical_stage	binary_sig3	exposure_sig3
+```
+
+```{r survival}
+library(survminer)
+library(survival)
+# Load data
+tcga_ov <- read.csv("/Users/yuexichen/Downloads/lrgr_file/mskfiles/final-TCGA-OV-MSK-MSK-survial-analysis.tsv", sep = '\t')
+# Specify data type: MSK, WXS or MSK-MSK
+data_type <- "MSK-MSK"
+if(data_type == "MSK-MSK"){
+  tcga_ov$new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3 > 0.001)
+}
+# Remove NAs
+# 1 is censored and 2 is dead
+tcga_ov <- tcga_ov[!(tcga_ov$survival_status == 0),]
+# Fit survival curves
+fit <- survfit(Surv(survival_days, survival_status) ~ new_binary_sig3, data = tcga_ov)
+# Drawing curves
+ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle("Survival analysis for MSK-TCGA-OV")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r cox}
+# Transform age to years
+tcga_ov$age_year <- tcga_ov$age_days/365
+fit2 <- coxph(Surv(survival_days, survival_status) ~ new_binary_sig3 + age_year + clinical_stage , data=tcga_ov)
+ggforest(fit2, data =tcga_ov)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
