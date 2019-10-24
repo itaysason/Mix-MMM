@@ -20,15 +20,24 @@ When you click the **Knit** button a document will be generated that includes bo
 # input: WXS sample id, TCGA clinical information file
 # output: a csv file with columns = ["id","status","time", "age", "clinical_stage"]
 # id	survival_status	survival_days	age_days	clinical_stage	binary_sig3	exposure_sig3
+a <- "abc"
+b <- "de"
+paste("li",b,"fg", sep="")
 ```
 
 ```{r survival}
 library(survminer)
 library(survival)
+
+#id_type <- "WXS"
+#id_type <- "MSK"
+id_type <- "MSK-MSK"
+data_type <- "assignments"
+
 # Load data
-tcga_ov <- read.csv("/Users/yuexichen/Downloads/lrgr_file/mskfiles/final-TCGA-OV-MSK-MSK-survial-analysis.tsv", sep = '\t')
+tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/final-TCGA-OV-", id_type, "-survial-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
 # Specify data type: MSK, WXS or MSK-MSK
-data_type <- "MSK-MSK"
+
 if(data_type == "MSK-MSK"){
   tcga_ov$new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3 > 0.001)
 }
@@ -36,9 +45,9 @@ if(data_type == "MSK-MSK"){
 # 1 is censored and 2 is dead
 tcga_ov <- tcga_ov[!(tcga_ov$survival_status == 0),]
 # Fit survival curves
-fit <- survfit(Surv(survival_days, survival_status) ~ new_binary_sig3, data = tcga_ov)
+fit <- survfit(Surv(survival_days, survival_status) ~ binary_sig3, data = tcga_ov)
 # Drawing curves
-ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle("Survival analysis for MSK-TCGA-OV")
+ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle(paste("Survival analysis for TCGA-OV-", id_type, "-",data_type, sep=''))
 ```
 
 ## Including Plots
@@ -48,7 +57,7 @@ You can also embed plots, for example:
 ```{r cox}
 # Transform age to years
 tcga_ov$age_year <- tcga_ov$age_days/365
-fit2 <- coxph(Surv(survival_days, survival_status) ~ new_binary_sig3 + age_year + clinical_stage , data=tcga_ov)
+fit2 <- coxph(Surv(survival_days, survival_status) ~ binary_sig3 + age_year + clinical_stage , data=tcga_ov)
 ggforest(fit2, data =tcga_ov)
 ```
 
