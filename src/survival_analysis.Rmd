@@ -16,38 +16,26 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 
-```{r data}
-# input: WXS sample id, TCGA clinical information file
-# output: a csv file with columns = ["id","status","time", "age", "clinical_stage"]
-# id	survival_status	survival_days	age_days	clinical_stage	binary_sig3	exposure_sig3
-a <- "abc"
-b <- "de"
-paste("li",b,"fg", sep="")
-```
-
 ```{r survival}
 library(survminer)
 library(survival)
 
-#id_type <- "WXS"
+id_type <- "WXS"
 #id_type <- "MSK"
-id_type <- "MSK-MSK"
-data_type <- "assignments"
-
+#id_type <- "MSK-MSK"
+#data_type <- "assignments"
+data_type <- "exposures"
 # Load data
-tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/final-TCGA-OV-", id_type, "-survial-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
+tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/sigma-wildtype-TCGA-OV-", id_type, "-survival-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
 # Specify data type: MSK, WXS or MSK-MSK
-
-if(data_type == "MSK-MSK"){
-  tcga_ov$new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3 > 0.001)
-}
+#new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3>0.5)
 # Remove NAs
 # 1 is censored and 2 is dead
 tcga_ov <- tcga_ov[!(tcga_ov$survival_status == 0),]
 # Fit survival curves
 fit <- survfit(Surv(survival_days, survival_status) ~ binary_sig3, data = tcga_ov)
 # Drawing curves
-ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle(paste("Survival analysis for TCGA-OV-", id_type, "-",data_type, sep=''))
+ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle(paste("Wildtype BRCA1/2: TCGA-OV-", id_type, "-",data_type, sep=''))
 ```
 
 ## Including Plots
@@ -60,5 +48,9 @@ tcga_ov$age_year <- tcga_ov$age_days/365
 fit2 <- coxph(Surv(survival_days, survival_status) ~ binary_sig3 + age_year + clinical_stage , data=tcga_ov)
 ggforest(fit2, data =tcga_ov)
 ```
-
+```{r}
+sum(tcga_ov$binary_sig3)
+sum(tcga_ov$binary_sig3==0)
+sum(new_binary_sig3)
+```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
