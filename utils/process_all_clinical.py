@@ -3,11 +3,13 @@ import json
 import pandas as pd
 import numpy as np
 
-def concat_expo(select_df_f, npy_f, new_df_f):
+def concat_expo(select_df_f, npy_f, new_df_f, expo_type, sig_type):
     """
     input:
     1. the selected dataframe
-    2. the numpy file of exposures
+    2. the numpy file of exposures or assignments
+    3. the output file name
+    4. the expo_type, exposures and assignments
     output:
     A new dataframe with the new columns
     column 1: binary exposures of signature 3
@@ -15,19 +17,35 @@ def concat_expo(select_df_f, npy_f, new_df_f):
     """
     select_df = pd.read_csv(select_df_f, sep='\t')
     all_npy = np.load(npy_f, allow_pickle=True)
-    expo_3 = [items[1] for items in all_npy]
-    #only take the second element, i.e. the exposure to signature 3
-    bina_3 = []
+   
+    bina_item = []
     zero_cnt = 0
-    for expo in expo_3:
+    if expo_type == "exposures":
+        if sig_type == 3:
+        #only take the second element, i.e. the exposure to signature 3
+            expo_item = [items[1] for items in all_npy]
+        elif sig_type == 5:
+             expo_item = [items[2] for items in all_npy]
+    elif expo_type == "assignments":
+        if sig_type == 3:
+            expo_item = [items[1]/sum(items) for items in all_npy]
+        elif sig_type == 5:
+             expo_item = [items[2]/sum(items) for items in all_npy]
+
+    for expo in expo_item:
         if expo == 0:
-            bina_3.append(0)
+            bina_item.append(0)
             zero_cnt += 1
         else:
-            bina_3.append(1)
+            bina_item.append(1)
     print("We have %d zero counts"%zero_cnt)
-    select_df['binary_sig3'] = bina_3
-    select_df['exposure_sig3'] = expo_3
+    print(len(bina_item))
+    if sig_type == 3:
+        select_df['binary_sig3'] = bina_item
+        select_df['exposure_sig3'] = expo_item
+    elif sig_type == 5:
+        select_df['binary_sig5'] = bina_item
+        select_df['exposure_sig5'] = expo_item
     select_df.to_csv(new_df_f, sep='\t', index=None)
 
 
@@ -128,23 +146,27 @@ def row2df(msk_dir, raw_f, out_csv):
 
 if __name__ == "__main__":
     msk_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles"
+    id_dir = "/Users/yuexichen/Desktop/LRGR/Repository/Mix-MMM/data/WXS-TCGA-OV"
     all_clinical = join(msk_dir, "raw-TCGA-OV-all-clinical.tsv")
     out_csv = join(msk_dir,"raw-TCGA-OV-survial-analysis.tsv")
-    npyf_dir ="/Users/yuexichen/Downloads/tcga-ov-exposures"
+    npyf_dir ="/Users/yuexichen/Downloads/lrgr_file/mskfiles/zero-threshold-mix-out"
     row2df(msk_dir, all_clinical, out_csv)
-    id_type = "MSK-MSK"
-    #id_type = "WXS"
+    id_type = ["WXS", "MSK", "MSK-MSK"]
+    expo_type = ["exposures", "assignments"]
+    sig_type = 3
     all_df_f = out_csv
-    if id_type == "MSK":
-        id_list_f = "/Users/yuexichen/Desktop/LRGR/Repository/Mix-MMM/data/WXS-TCGA-OV/wxs-ov-msk-region_sample_id.txt"
-        npy_f = join(npyf_dir, "exposures-TCGA-OV-msk-region-TCGA-OV.npy")
-    elif id_type == "WXS":
-        id_list_f = "/Users/yuexichen/Desktop/LRGR/Repository/Mix-MMM/data/WXS-TCGA-OV/wxs-ov-all_sample_id.txt"
-        npy_f = join(npyf_dir, "exposures-TCGA-OV-TCGA-OV.npy")
-    elif id_type == "MSK-MSK":
-        id_list_f = "/Users/yuexichen/Desktop/LRGR/Repository/Mix-MMM/data/WXS-TCGA-OV/wxs-ov-msk-region_sample_id.txt"
-        npy_f = join(npyf_dir, "exposures-TCGA-OV-msk-region-TCGA-OV-msk-region.npy")
-    select_df_f = join(msk_dir, "TCGA-OV-select-%s.csv"%id_type)
-    select_df(msk_dir, all_df_f, id_list_f, select_df_f)
-    new_df_f = join(msk_dir, "final-TCGA-OV-%s-survial-analysis.tsv"%id_type)
-    concat_expo(select_df_f, npy_f, new_df_f)
+    for it in id_type:
+        for et in expo_type:
+            if it == "MSK":
+                id_list_f = join(id_dir,"wxs-ov-msk-region_sample_id.txt")
+                npy_f = join(npyf_dir, "%s-TCGA-OV-msk-region-TCGA-OV.npy"%et)
+            elif it == "WXS":
+                id_list_f = join(id_dir, "wxs-ov-all_sample_id.txt")
+                npy_f = join(npyf_dir, "%s-TCGA-OV-TCGA-OV.npy"%et)
+            elif it == "MSK-MSK":
+                id_list_f = join(id_dir, "wxs-ov-msk-region_sample_id.txt")
+                npy_f = join(npyf_dir, "%s-TCGA-OV-msk-region-TCGA-OV-msk-region.npy"%et)
+            select_df_f = join(msk_dir, "TCGA-OV-select-%s.csv"%it)
+            select_df(msk_dir, all_df_f, id_list_f, select_df_f)
+            new_df_f = join(msk_dir, "sig%d-final-TCGA-OV-%s-survival-analysis-%s.tsv"%(sig_type, it, et))
+            concat_expo(select_df_f, npy_f, new_df_f, et, sig_type)

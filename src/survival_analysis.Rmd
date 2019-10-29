@@ -26,9 +26,9 @@ id_type <- "WXS"
 #data_type <- "assignments"
 data_type <- "exposures"
 # Load data
-tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/sigma-wildtype-TCGA-OV-", id_type, "-survival-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
+tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/sigma-part4-BRCA-wildtype-TCGA-OV-", id_type, "-survival-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
 # Specify data type: MSK, WXS or MSK-MSK
-#new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3>0.5)
+#new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3>0.8)
 # Remove NAs
 # 1 is censored and 2 is dead
 tcga_ov <- tcga_ov[!(tcga_ov$survival_status == 0),]
@@ -45,12 +45,11 @@ You can also embed plots, for example:
 ```{r cox}
 # Transform age to years
 tcga_ov$age_year <- tcga_ov$age_days/365
-fit2 <- coxph(Surv(survival_days, survival_status) ~ binary_sig3 + age_year + clinical_stage , data=tcga_ov)
+fit2 <- coxph(Surv(survival_days, survival_status) ~ age_year +  binary_sig3 + clinical_stage , data=tcga_ov)
 ggforest(fit2, data =tcga_ov)
 ```
 ```{r}
 sum(tcga_ov$binary_sig3)
 sum(tcga_ov$binary_sig3==0)
-sum(new_binary_sig3)
 ```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
