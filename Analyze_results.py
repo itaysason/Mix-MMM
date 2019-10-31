@@ -2,6 +2,10 @@ from src.utils import get_model, load_json, get_data
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from src.utils import load_json, get_data, get_cosmic_signatures
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.decomposition import NMF
 
 
 def process_sample_cv(sample_cv_dir='experiments/sampleCV'):
@@ -45,7 +49,8 @@ def process_sample_cv(sample_cv_dir='experiments/sampleCV'):
                         best_run = np.argmax(train_scores)
                         experiment_score += test_scores[best_run]
                     if len(no_run_folds) > 0 or len(no_dir_folds):
-                        print(curr_experiment_string + 'completely missing folds {} and missing runs for {}'.format(no_dir_folds, no_run_folds))
+                        print(curr_experiment_string + 'completely missing folds {} and missing runs for {}'.format(
+                            no_dir_folds, no_run_folds))
                     else:
                         print(curr_experiment_string + ' score is {}'.format(experiment_score))
                         scores.append(experiment_score)
@@ -61,13 +66,15 @@ def process_sample_cv(sample_cv_dir='experiments/sampleCV'):
 def process_BIC(trained_models_dir='experiments/trained_models'):
     datasets = os.listdir(trained_models_dir)
     for dataset in datasets:
+        if 'new' not in dataset:
+            continue
         data, _ = get_data(dataset)
         num_data_points = np.sum(data)
         print(dataset + ':')
         dataset_dir = os.path.join(trained_models_dir, dataset)
         for signature_learning in os.listdir(dataset_dir):
             print(signature_learning)
-            tmp = []
+            BIC_scores = []
             clusters = []
             if signature_learning == 'refit':
                 for model in os.listdir(os.path.join(dataset_dir, signature_learning)):
@@ -83,13 +90,14 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         num_clusters = int(model.split('_')[1][:3])
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
-                        tmp.append(np.log(num_data_points) * num_params - 2 * best_score)
+                        BIC_scores.append(np.log(num_data_points) * num_params - 2 * best_score)
                         clusters.append(num_clusters)
                 print('\n')
                 num_clusters = np.array(clusters, dtype='int')
-                tmp = np.array(tmp)
-                print(num_clusters[np.argmin(tmp)])
-                plt.plot(num_clusters, tmp)
+                BIC_scores = np.array(BIC_scores)
+                print(num_clusters[np.argmin(BIC_scores)])
+                plt.plot(num_clusters, BIC_scores)
+                plt.title(dataset)
                 plt.show()
             elif signature_learning == 'denovo':
                 sigs = []
@@ -107,26 +115,322 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters + (96 - 1) * num_sigs
                         # If we use smoothing I think we need to add the number of "data points" we added
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
-                        tmp.append(np.log(num_data_points) * num_params - 2 * best_score)
+                        BIC_scores.append(np.log(num_data_points) * num_params - 2 * best_score)
                         clusters.append(num_clusters)
                         sigs.append(num_sigs)
                 print('\n')
                 clusters = np.array(clusters, dtype='int')
                 sigs = np.array(sigs, dtype='int')
-                tmp = np.array(tmp)
-                print(clusters[tmp.argmin()], sigs[tmp.argmin()])
-                num_clusters_learned, num_sigs_learned = len(np.unique(clusters)), len(np.unique(sigs))
-                clusters = clusters.reshape((num_clusters_learned, num_sigs_learned))
-                sigs = sigs.reshape((num_clusters_learned, num_sigs_learned))
-                tmp = tmp.reshape((num_clusters_learned, num_sigs_learned))
+                BIC_scores = np.array(BIC_scores)
+                print(clusters[BIC_scores.argmin()], sigs[BIC_scores.argmin()])
+
+                unique_clusters = np.unique(clusters)
+                unique_signaturs = np.unique(sigs)
                 from mpl_toolkits.mplot3d import axes3d
 
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
-                ax.plot_wireframe(clusters, sigs, tmp, rstride=1, cstride=1)
 
+                for c in unique_clusters:
+                    tmp = clusters == c
+                    curr_sigs = sigs[tmp]
+                    curr_clusters = clusters[tmp]
+                    curr_BIC_scores = BIC_scores[tmp]
+                    arg_sort_curr_sigs = np.argsort(curr_sigs)
+                    curr_clusters = np.array([curr_clusters[arg_sort_curr_sigs]])
+                    curr_sigs = np.array([curr_sigs[arg_sort_curr_sigs]])
+                    curr_BIC_scores = np.array([curr_BIC_scores[arg_sort_curr_sigs]])
+                    ax.plot_wireframe(curr_clusters, curr_sigs, curr_BIC_scores, rstride=1, cstride=1)
+                for s in unique_signaturs:
+                    tmp = sigs == s
+                    curr_sigs = sigs[tmp]
+                    curr_clusters = clusters[tmp]
+                    curr_BIC_scores = BIC_scores[tmp]
+                    arg_sort_curr_clusters = np.argsort(curr_clusters)
+                    curr_clusters = np.array([curr_clusters[arg_sort_curr_clusters]])
+                    curr_sigs = np.array([curr_sigs[arg_sort_curr_clusters]])
+                    curr_BIC_scores = np.array([curr_BIC_scores[arg_sort_curr_clusters]])
+                    ax.plot_wireframe(curr_clusters, curr_sigs, curr_BIC_scores, rstride=1, cstride=1)
+
+                plt.title(dataset)
                 plt.show()
 
 
-process_BIC()
-# process_sample_cv()
+def compare_signatures():
+    # loading data
+    cosmic_signatures = get_cosmic_signatures()
+
+    dirs = ['experiments/trained_models/MSK-ALL/denovo/mix_010clusters_006signatures']
+    for d in dirs:
+        print('\n{}'.format(d))
+        best_score = -np.inf
+        best_run = None
+        sig_identified = []
+        identification_score = []
+        for run in os.listdir(d):
+            curr_score = load_json(os.path.join(d, run))['log-likelihood']
+            if curr_score >= best_score:
+                best_score = curr_score
+                best_run = run
+
+            e = np.array(load_json(os.path.join(d, run))['parameters']['e'])
+            cosmic_signatures = get_cosmic_signatures()
+            num_denovo_signatures = len(e)
+
+            signature_correlations = np.corrcoef(e, cosmic_signatures)
+            for i in range(num_denovo_signatures):
+                corr_correlations = signature_correlations[i, num_denovo_signatures:]
+                sig_identified.append(np.argmax(corr_correlations) + 1)
+                identification_score.append(np.max(corr_correlations))
+            pass
+
+        print('All runs signatures match summary')
+        sig_identified = np.array(sig_identified)
+        identification_score = np.array(identification_score)
+        sorted_indices = np.argsort(-identification_score)
+        sig_identified = sig_identified[sorted_indices]
+        identification_score = identification_score[sorted_indices]
+        print(0.8, len(sig_identified[identification_score > 0.8]),
+              np.unique(sig_identified[identification_score > 0.8], return_counts=True))
+        print(0.85, len(sig_identified[identification_score > 0.85]),
+              np.unique(sig_identified[identification_score > 0.85], return_counts=True))
+        print(0.9, len(sig_identified[identification_score > 0.9]),
+              np.unique(sig_identified[identification_score > 0.9], return_counts=True))
+
+        print('\nBest run signature matches')
+        e = np.array(load_json(os.path.join(d, best_run))['parameters']['e'])
+        num_denovo_signatures = len(e)
+
+        signature_correlations = np.corrcoef(e, cosmic_signatures)
+        for i in range(num_denovo_signatures):
+            corr_correlations = signature_correlations[i, num_denovo_signatures:]
+            print(i, np.argmax(corr_correlations) + 1, np.max(corr_correlations))
+    return
+
+
+def compare_signatures_NMF(range_signatures):
+    cosmic_signatures = get_cosmic_signatures()
+    random_seeds = [140296, 142857, 314179, 847662, 3091985, 28021991, 554433, 123456, 654321, 207022]
+    for dataset in ['MSK-ALL', 'clustered-MSK-ALL']:
+        a, _ = get_data(dataset)
+        for num_sigs in range_signatures:
+            print(dataset, num_sigs)
+            sigs = np.zeros(num_sigs, dtype='int')
+            corrs = np.zeros(num_sigs)
+            best_e = np.zeros((num_sigs, 96))
+            best_score = np.inf
+            for seed in random_seeds:
+                model = NMF(num_sigs, max_iter=1000, random_state=seed)
+                pi = model.fit_transform(a)
+                e = model.components_
+                pi *= e.sum(1)
+                e /= e.sum(1, keepdims=True)
+                score = np.linalg.norm(a - pi @ e)
+                if score < best_score:
+                    best_score = score
+                    best_e = e
+
+            signature_correlations = np.corrcoef(best_e, cosmic_signatures)
+            for i in range(num_sigs):
+                corr_correlations = signature_correlations[i, num_sigs:]
+                sigs[i] = np.argmax(corr_correlations) + 1
+                corrs[i] = np.max(corr_correlations).round(3)
+                print(i, np.argmax(corr_correlations) + 1, np.max(corr_correlations))
+            corrs = corrs[np.argsort(sigs)]
+            sigs = sigs[np.argsort(sigs)]
+            print('{} - {}'.format(sigs.tolist(), corrs.tolist()))
+
+
+def cluster_assignment_signature_compatability(model, assignment_intersections, cancer_types):
+    cancer_signature_dict = {'LUAD': [1, 2, 4, 5],
+                             # IDC is a branch of BRCA
+                             'IDC': [1, 2, 3, 8, 13],
+                             # Colorectal
+                             'COAD': [1, 6, 10],
+                             # prostate
+                             'PRAD': [1, 6],
+                             # Pancreatic
+                             'PAAD': [1, 2, 3, 6],
+                             # Bladder
+                             'BLCA': [1, 2, 5, 10, 13],
+                             # Glioblastoma
+                             'GBM': [1, 11],
+                             # renal clear cell carcinoma (CCRCC) is a branch of kidney cancers
+                             'CCRCC': [1, 6],
+                             # SKCM is a branch of melanoma
+                             'SKCM': [1, 7, 11],
+                             # ILC is a branch of BRCA
+                             'ILC': [1, 2, 3, 8, 13],
+                             # Lung squamous
+                             'LUSC': [2, 4, 5],
+                             # Stomach
+                             'STAD': [1, 2, 15, 17, 20, 21],
+                             # READ is most similar to COAD
+                             'READ': [1, 6, 10],
+                             # unknow primary
+                             'CUP': [1, 2],
+                             # Gastro is not in the figure, use the unknown primary
+                             'GIST': [1, 2],
+                             # HGSOC is a branch of ovarian cancer
+                             'HGSOC': [1, 3],
+                             # IHCH is a branch of liver cancer
+                             'IHCH': [1, 4, 6, 12, 16, 17],
+                             # ESCA is most similar to stomach
+                             'ESCA': [1, 2, 15, 17, 20, 21]}
+    cosmic_signatures = get_cosmic_signatures()
+
+    pi = model.pi
+    e = model.e
+    num_denovo_signatures = len(e)
+    signature_correlations = np.corrcoef(e, cosmic_signatures)
+    signature_matches = np.zeros(num_denovo_signatures)
+    signature_scores = np.zeros(num_denovo_signatures)
+    for i in range(num_denovo_signatures):
+        corr_correlations = signature_correlations[i, num_denovo_signatures:]
+        signature_matches[i] = np.argmax(corr_correlations) + 1
+        signature_scores[i] = np.max(corr_correlations)
+
+    for i, cancer in enumerate(cancer_types):
+        cancer_active_sigs = cancer_signature_dict[cancer]
+        top_cluster = np.argmax(assignment_intersections[:, i])
+        top_cluster_score = assignment_intersections[top_cluster, i] / np.sum(assignment_intersections[:, i])
+        topc_cluster_active_sigs = signature_matches[pi[top_cluster] > 1e-1]
+        print(cancer, top_cluster + 1, top_cluster_score, cancer_active_sigs, topc_cluster_active_sigs)
+    return
+
+
+def jaccard_similarity(clusters1, clusters2):
+    from sklearn.metrics.cluster import adjusted_mutual_info_score
+    return adjusted_mutual_info_score(clusters1, clusters2)
+
+
+def compare_clusters():
+    # loading data
+    data, active_signatures = get_data('MSK-ALL')
+
+    rich_sample_threshold = 10
+    num_mutations_per_sample = data.sum(1)
+
+    all_df = pd.read_csv("data/processed/oncotype_counts.txt", sep='\t')
+    all_df['Counts'] = all_df['Counts'].astype(int)
+    all_df = all_df[all_df['Counts'] > 100]
+    cancer_types = np.array(all_df['Oncotree'])
+
+    sample_cancer_assignments = []
+    for oc in cancer_types:
+        dat_f = "data/processed/%s_counts.npy" % oc
+        tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
+        sample_cancer_assignments.extend([oc] * len(tmp_data))
+    sample_cancer_assignments = np.array(sample_cancer_assignments)
+
+    d = 'experiments/trained_models/MSK-ALL/denovo/mix_010clusters_006signatures'
+    best_score = -np.inf
+    best_run = None
+    for run in os.listdir(d):
+        curr_score = load_json(os.path.join(d, run))['log-likelihood']
+        if curr_score >= best_score:
+            best_score = curr_score
+            best_run = run
+
+    model = get_model(load_json(os.path.join(d, best_run))['parameters'])
+    sample_cluster_assignment_MIX, _, _ = model.predict(data)
+    assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
+    for cluster in range(model.num_clusters):
+        for cancer_idx, cancer in enumerate(cancer_types):
+            assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                np.logical_and(sample_cluster_assignment_MIX == cluster, sample_cancer_assignments == cancer))
+
+    print('MIX clustering on all samples: jaccard = {}'.format(jaccard_similarity(sample_cancer_assignments, sample_cluster_assignment_MIX)))
+
+    assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
+    for cluster in range(model.num_clusters):
+        for cancer_idx, cancer in enumerate(cancer_types):
+            assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                np.logical_and(num_mutations_per_sample >= rich_sample_threshold,
+                               np.logical_and(sample_cluster_assignment_MIX == cluster,
+                                              sample_cancer_assignments == cancer)))
+
+    print('MIX clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], sample_cluster_assignment_MIX[num_mutations_per_sample >= rich_sample_threshold])))
+
+    # KMeans clustering
+    tmp1 = []
+    tmp2 = []
+    tmp3 = []
+    tmp4 = []
+    for num_clusters in range(100, 101):
+        print(num_clusters)
+        model.num_clusters = num_clusters
+        cluster_model = KMeans(model.num_clusters)
+        cluster_model.fit(data)
+        kmeans_clusters = cluster_model.predict(data)
+        assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
+        for cluster in range(model.num_clusters):
+            for cancer_idx, cancer in enumerate(cancer_types):
+                assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                    np.logical_and(kmeans_clusters == cluster, sample_cancer_assignments == cancer))
+
+        print('KMeans clustering on all samples: jaccard = {}'.format(jaccard_similarity(sample_cancer_assignments, kmeans_clusters)))
+        tmp1.append(jaccard_similarity(sample_cancer_assignments, kmeans_clusters))
+
+        rich_sample_threshold = 10
+        assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
+        for cluster in range(model.num_clusters):
+            for cancer_idx, cancer in enumerate(cancer_types):
+                assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                    np.logical_and(num_mutations_per_sample >= rich_sample_threshold,
+                                   np.logical_and(kmeans_clusters == cluster, sample_cancer_assignments == cancer)))
+
+        print('KMeans clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold])))
+        tmp2.append(jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
+
+        # NMF + KMeans clustering
+        d = 'experiments/NMF_denovo_models'
+        best_score = -np.inf
+        best_run = None
+        for run in os.listdir(d):
+            curr_score = load_json(os.path.join(d, run))['log-likelihood']
+            if curr_score >= best_score:
+                best_score = curr_score
+                best_run = run
+
+        pi = np.array(load_json(os.path.join(d, best_run))['parameters']['pi'])
+        nmf_cluster_model = KMeans(model.num_clusters)
+        nmf_cluster_model.fit(pi)
+        nmf_kmeans_clusters = nmf_cluster_model.predict(pi)
+        for cluster in range(model.num_clusters):
+            for cancer_idx, cancer in enumerate(cancer_types):
+                assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                    np.logical_and(nmf_kmeans_clusters == cluster, sample_cancer_assignments == cancer))
+
+        print('NMF + KMeans clustering on all samples: jaccard = {}'.format(
+            jaccard_similarity(sample_cancer_assignments, nmf_kmeans_clusters)))
+        tmp3.append(jaccard_similarity(sample_cancer_assignments, nmf_kmeans_clusters))
+
+        rich_sample_threshold = 10
+        assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
+        for cluster in range(model.num_clusters):
+            for cancer_idx, cancer in enumerate(cancer_types):
+                assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
+                    np.logical_and(num_mutations_per_sample >= rich_sample_threshold,
+                                   np.logical_and(nmf_kmeans_clusters == cluster, sample_cancer_assignments == cancer)))
+
+        print('NMF+ KMeans clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold,
+                                                                                           jaccard_similarity(
+                                                                                               sample_cancer_assignments[
+                                                                                                   num_mutations_per_sample >= rich_sample_threshold],
+                                                                                               nmf_kmeans_clusters[
+                                                                                                   num_mutations_per_sample >= rich_sample_threshold])))
+        tmp4.append(jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], nmf_kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
+    print(tmp1)
+    print(tmp2)
+    print(tmp3)
+    print(tmp4)
+    print(5 + np.argmax(tmp1), np.max(tmp1))
+    print(5 + np.argmax(tmp2), np.max(tmp2))
+    print(5 + np.argmax(tmp3), np.max(tmp3))
+    print(5 + np.argmax(tmp4), np.max(tmp4))
+
+
+process_BIC('experiments/trained_models')
+# compare_signatures()
+# compare_clusters()

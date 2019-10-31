@@ -90,7 +90,6 @@ class MMM:
         for param in params:
             values_list.add(param)
         log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step(values_list)
-        start_log_likelihood = prev_log_likelihood
         log_likelihood = prev_log_likelihood
         for iteration in range(self.max_iter):
             # maximization step
@@ -106,7 +105,7 @@ class MMM:
 
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
-        return start_log_likelihood - log_likelihood, self.pi, self.e
+        return log_likelihood
 
     def _one_sample_fit(self, x):
         if len(x.shape) == 1:
