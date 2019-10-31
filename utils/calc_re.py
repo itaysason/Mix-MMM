@@ -53,12 +53,15 @@ def sub_max(raw_M, recon_M, cutoff,upper):
     #    recon_M = recon_M[sele_row]
     #print("%d rows have been selected in the matrix"%len(sele_row))
     #per_err = (abs(recon_M-sbs_M)).sum()/sbs_M.sum()
-    l1_norm = np.linalg.norm((recon_M - sbs_M), ord=1)/(np.linalg.norm(sbs_M, ord=1))
+    #print(recon_M)
+    #print(sbs_M)
+    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)
+    l2_norm = l2_norm/sbs_M.sum()
     print(raw_M)
-    print("l1 norm %0.3f"%l1_norm)
+    print("l2 norm %0.8f"%l2_norm)
     #assert(per_err==l1_norm)
     #print(per_err)
-    return l1_norm
+    return l2_norm
 
 def comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff, upper):
     """
@@ -171,37 +174,31 @@ if __name__ == "__main__":
     #out_sbs = join(msk_dir, "sigma-wxs-ov-msk-sbs.tsv")
     
     # cancer type: ov or brca
-    
+    #"""
     
     cancer_type ="ov"
     if cancer_type == "brca":
         #ds_list = ["","-d10","-d100"]
-        ds_list = [("-new-BRCA","-ICGC-BRCA"),("-new-BRCA","-new-BRCA")]
+        ds_list = ['all', 'downsize100','downsize250','downsize500']
     elif cancer_type == "ov":
         #ds_list = ["", "-msk"]
-        ds_list = [("-new-OV","-TCGA-OV"), ("-new-OV","-new-OV")]
+        ds_list = ['all','downsize2','downsize5','downsize10']
 
     for dl in ds_list:
         if cancer_type == "brca":
             #out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
-            out_sbs = join(msk_dir, "sigma-direct-brca-d500.tsv")
+            out_sbs = join(msk_dir, "brca-%s_sigma_sbs.tsv"%dl)
             #sigma_out = join(msk_dir, "sigma-wxs-ov-msk-sbs-out.tsv")
-            sigma_out = join(msk_dir,"t0-sigma-direct-brca-d500-out.tsv")
+            sigma_out = join(msk_dir,"out-brca-%s_sigma_sbs.tsv"%dl)
             # sigma_formatter(in_sbs, out_sbs)
         elif cancer_type == "ov":
             #out_sbs = join(msk_dir, "sigma-wxs-ov%s-sbs.tsv"%dl)
-            out_sbs = join(msk_dir, "sigma-direct-ov-d10.tsv")
+            out_sbs = join(msk_dir, "ov-%s_sigma_sbs.tsv"%dl)
             #sigma_out = join(msk_dir, "t0-sigma-wxs-ov%s-sbs-out.tsv"%dl)
-            sigma_out = join(msk_dir,"t0-sigma-direct-ov-d10-out.tsv")
-        if len(dl)>0:
-                #panels
-                upper = 5
-        else:
-                #wxs or wgs
-                upper = 10
+            sigma_out = join(msk_dir,"out-ov-%s_sigma_sbs.tsv"%dl)
         raw_M = out_sbs
         cutoff = 0
-        comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff,upper)
+        comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff,upper=None)
     
 
     """
@@ -211,38 +208,40 @@ if __name__ == "__main__":
     #setting = ["exposures","assignments"]
     setting = ["assignments"]
     # cancer type: ov or brca
-    cancer_type = "brca"
+    cancer_type = "ov"
     cutoff = 0
     if cancer_type == "brca":
         sig_list = brca_sigs
-        #ds_list = [("",""),("-ds10",""),("-ds10","-ds10"), ("-ds100",""), ("-ds100","-ds100")]
-        ds_list = [("-new-BRCA","-ICGC-BRCA"),("-new-BRCA","-new-BRCA")]
+        ds_list = [("-ICGC-BRCA","-ICGC-BRCA"),("-BRCA-ds100","-ICGC-BRCA"),("-BRCA-ds100","-BRCA-ds100"),("-BRCA-ds250","-ICGC-BRCA"),("-BRCA-ds250","-BRCA-ds250"),
+        ("-BRCA-ds500","-ICGC-BRCA"),("-BRCA-ds500","-BRCA-ds500"),]
     elif cancer_type == "ov":
         sig_list = ov_sigs
         #ds_list = [("",""), ("-msk-region",""), ("-msk-region", "-msk-region")]
-        ds_list = [("-new-OV","-TCGA-OV"), ("-new-OV","-new-OV")]
-    expo_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles/direct_ds"
+        ds_list = [("-TCGA-OV","-TCGA-OV"),("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
+    expo_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles/mix_downsize"
     
     for st in setting:
         for dl in ds_list:
             print("Now the setting is %s"%st)
+            print(dl)
             if cancer_type == "brca":
                 #expo_np = join(expo_dir, "%s-ICGC-BRCA%s-ICGC-BRCA%s.npy"%(st,dl[0],dl[1]))
                 expo_np = join(expo_dir,"%s%s%s.npy"%(st, dl[0],dl[1]))
                 #raw_M = join(msk_dir, "sigma-wgs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
-                raw_M = join(msk_dir, "sigma-direct-brca-d500.tsv")
+                if dl[0] != "-ICGC-BRCA":
+                    ratio = int(re.findall(r'\d+', dl[0])[0])
+                    raw_M = join(msk_dir, "brca-downsize%d_sigma_sbs.tsv"%ratio)
+                else:
+                    raw_M = join(msk_dir, "brca-all_sigma_sbs.tsv")
+                
             elif cancer_type == "ov":
                 #expo_np = join(expo_dir, "%s-TCGA-OV%s-TCGA-OV%s.npy"%(st, dl[0],dl[1]))
                 expo_np = join(expo_dir,"%s%s%s.npy"%(st, dl[0],dl[1]))
                 #raw_M = join(msk_dir, "sigma-wxs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
-                raw_M = join(msk_dir, "sigma-direct-ov-d10.tsv")
-            if len(dl[0])>0:
-                #panels
-                upper = 5
-            else:
-                #wxs or wgs
-                upper = 10
-            pererr = comp_re_ours(raw_M, expo_np, sig_list, cosmic, st, cutoff, upper)
-            #print("file name: ", expo_np)
-            #print(pererr)
+                if dl[0]!= "-TCGA-OV":
+                    ratio = int(re.findall(r'\d+', dl[0])[0])
+                    raw_M = join(msk_dir, "ov-downsize%d_sigma_sbs.tsv"%ratio)
+                else:
+                    raw_M = join(msk_dir, "ov-all_sigma_sbs.tsv")
+            pererr = comp_re_ours(raw_M, expo_np, sig_list, cosmic, st, cutoff, upper=None)
     """

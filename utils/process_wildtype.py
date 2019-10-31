@@ -86,17 +86,17 @@ if __name__ == "__main__":
     #platinum_j = join(msk_dir, "platinum-dict.json")
     # exp type: MSK-MSK, WXS, MSK
     #exp_type = ["WXS", "MSK", "MSK-MSK"]
-    exp_type = ["TCGA-OV","new-OV"]
+    ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
     # data type: assignments, exposures
     #dat_type = ["assignments", "exposures"]
     dat_type = ["assignments"]
-    part_type = [1,2,3,4]
+    part_type = [2]
     #dat_type = ["exposures"]
     for pt in part_type:
-        for et in exp_type:
+        for dl in ds_list:
             for dt in dat_type:
                 #previous_surv_f = join(msk_dir, "sig3-final-TCGA-OV-%s-survial-analysis-%s.tsv"%(et, dt))
-                previous_surv_f = join(msk_dir, "sig3-final-new-OV-%s-survival-analysis-%s.tsv"%(et,dt))
-                doc_surv_pref = join(msk_dir, "sig3-part%d-status-new-OV-%s-survival-analysis-%s"%(pt, et, dt))
+                previous_surv_f = join(msk_dir, "complete-new%s%s-survival-analysis-%s.tsv"%(dl[0],dl[1],dt))
+                doc_surv_pref = join(msk_dir, "part%d-status-new%s%s-survival-analysis-%s"%(pt, dl[0], dl[1], dt))
                 wilddict(brca_status_f, ov_brca_j, pt)
                 sele_df(previous_surv_f, doc_surv_pref, ov_brca_j)
