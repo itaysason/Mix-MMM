@@ -37,46 +37,66 @@ def wilddict(brca_status_f, ov_brca_j, part_type):
     with open(ov_brca_j,'w') as out_j:
         json.dump(brca_dict, out_j)
 
-def sele_df(previous_surv_f, wildtype_surv_f, ov_brca_j, platinum_j):
+def sele_df(previous_surv_f, doc_surv_pref, ov_brca_j):
     """
-    input: final survival df
-    output: selected rows only when it's wildtype and have been treated with platinum
+    input: final survival df, threshold of being sig3+
+    output: selected rows only when its wildtype status is known, and a status column which indicates its sig3 status and BRCAness
     """
     prev_df = pd.read_csv(previous_surv_f, sep='\t')
     with open(ov_brca_j) as in_f:
         ov_dict = json.load(in_f)
     ov_keys = list(ov_dict.keys())
 
-    with open(platinum_j) as in_f2:
-        pt_dict = json.load(in_f2)
-    platinum_keys = list(pt_dict.keys())
     # only keep those rows that the last 4 digits of ids match
     id_ls = list(prev_df['id'])
-    wild_ls = []
+    doc_ls = []
     for i in range(len(prev_df.index)):
         id_4 = id_ls[i][-4:]
-        if (id_4 in ov_keys) and (ov_dict[id_4] == 0) and (id_ls[i] in platinum_keys):
-                wild_ls.append(prev_df.iloc[i:i+1])
-    wild_df = pd.concat(wild_ls)
-    wild_df.to_csv(wildtype_surv_f, sep='\t',index=None)
+        if (id_4 in ov_keys):
+            doc_ls.append(prev_df.iloc[i:i+1])
+    doc_df = pd.concat(doc_ls)
+    all_exp = [float(item) for item in list(doc_df['exposure_sig3'])]
+    percent = [0,10,25,50]
+    for perc in percent:
+        status = []
+        perc_bina = []
+        if perc > 0:
+            sig_threshold = np.percentile(all_exp,perc)
+        else:
+            sig_threshold = 0
+        for j in range(len(doc_df.index)):
+            id_4 = list(doc_df['id'])[j][-4:]
+            if (ov_dict[id_4] == 0) and (float(prev_df['exposure_sig3'][j])<=sig_threshold):
+                status.append("Sig3-")
+                perc_bina.append(0)
+            elif (ov_dict[id_4] == 0) and (float(prev_df['exposure_sig3'][j])>sig_threshold):
+                status.append("Sig3+")
+                perc_bina.append(1)
+            elif (ov_dict[id_4] == 1):
+                status.append("BRCA mutations")
+                perc_bina.append("na")
+        doc_df['status'] = status
+        doc_df['perc_bina']=perc_bina
+        doc_df.to_csv(doc_surv_pref + "-%d.tsv"%perc, sep='\t',index=None)
 
 if __name__ == "__main__":
     msk_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles"
     brca_status_f = join(msk_dir, "Ovary_OS_KM_matrix.txt")
     ov_brca_j = join(msk_dir, "ov-brca-status.json")
-    platinum_j = join(msk_dir, "platinum-dict.json")
+    #platinum_j = join(msk_dir, "platinum-dict.json")
     # exp type: MSK-MSK, WXS, MSK
-    exp_type = ["WXS", "MSK", "MSK-MSK"]
-    #exp_type = ["WXS"]
+    #exp_type = ["WXS", "MSK", "MSK-MSK"]
+    exp_type = ["TCGA-OV","new-OV"]
     # data type: assignments, exposures
-    dat_type = ["assignments", "exposures"]
-    #dat_type = ["exposures"]
+    #dat_type = ["assignments", "exposures"]
+    dat_type = ["assignments"]
     part_type = [1,2,3,4]
     #dat_type = ["exposures"]
     for pt in part_type:
         for et in exp_type:
             for dt in dat_type:
-                previous_surv_f = join(msk_dir, "sig3-final-TCGA-OV-%s-survial-analysis-%s.tsv"%(et, dt))
-                wildtype_surv_f = join(msk_dir, "sig3-part%d-BRCA-wildtype-platinum-TCGA-OV-%s-survival-analysis-%s.tsv"%(pt, et, dt))
+                #previous_surv_f = join(msk_dir, "sig3-final-TCGA-OV-%s-survial-analysis-%s.tsv"%(et, dt))
+                previous_surv_f = join(msk_dir, "sig3-final-new-OV-%s-survival-analysis-%s.tsv"%(et,dt))
+                doc_surv_pref = join(msk_dir, "sig3-part%d-status-new-OV-%s-survival-analysis-%s"%(pt, et, dt))
                 wilddict(brca_status_f, ov_brca_j, pt)
-                sele_df(previous_surv_f, wildtype_surv_f, ov_brca_j, platinum_j)
+                sele_df(previous_surv_f, doc_surv_pref, ov_brca_j)

@@ -38,8 +38,9 @@ def sub_max(raw_M, recon_M, cutoff,upper):
         #the threshold is 10 for WGS/WXS
         if sum(all_sbs_M[i,:])>cutoff:
             sbs_M_ls.append(all_sbs_M[i,:])
-        if sum(all_sbs_M[i,:]) < upper:
             sele_row.append(i)
+        #if sum(all_sbs_M[i,:]) < upper:
+        #    sele_row.append(i)
 
     sbs_M = np.stack(sbs_M_ls)
     sum_mut = sbs_M.sum(axis=1).astype(float)
@@ -47,10 +48,10 @@ def sub_max(raw_M, recon_M, cutoff,upper):
     #print("number of samples: ", (np.shape(sum_mut)))
     #print("Mutations in raw count max: , min: , average: , mean: ",np.amax(sum_mut), np.amin(sum_mut), np.average(sum_mut), np.mean(sum_mut)) 
     #error per mutation
-    if len(sele_row) > 0:
-        recon_M = recon_M[sele_row]
-        sbs_M = sbs_M[sele_row]
-    print("%d rows have been selected in the matrix"%len(sele_row))
+    #not for sigma
+    #if len(sele_row) > 0:
+    #    recon_M = recon_M[sele_row]
+    #print("%d rows have been selected in the matrix"%len(sele_row))
     #per_err = (abs(recon_M-sbs_M)).sum()/sbs_M.sum()
     l1_norm = np.linalg.norm((recon_M - sbs_M), ord=1)/(np.linalg.norm(sbs_M, ord=1))
     print(raw_M)
@@ -80,7 +81,8 @@ def comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff, upper):
     for fe in exps_all:
         tmp = fe.split('_')
         tmp = [float(i) for i in tmp]
-        tmp = [i/sum(tmp) for i in tmp]
+        if sum(tmp) > 0:
+            tmp = [i/sum(tmp) for i in tmp]
         float_exp.append(tmp)
     #select signatures
     cosmic_df = pd.read_csv(cosmic, sep='\t')
@@ -122,7 +124,10 @@ def comp_re_ours(raw_M, expo_np, sig_list, cosmic, setting, cutoff,upper):
             now_sig = tmp_sig.values[0][1:]
             #now_expo = float_exp[j]
             if setting == "assignments":
-                now_expo = all_np[i][j]/sum(all_np[i])
+                if sum(all_np[i])>0:
+                    now_expo = all_np[i][j]/sum(all_np[i])
+                else:
+                    now_expo = all_np[i][j]
             elif setting == "exposures":
                 now_expo = all_np[i][j]
             elif setting == "expected_topics":
@@ -167,21 +172,27 @@ if __name__ == "__main__":
     
     # cancer type: ov or brca
     
-    cancer_type ="brca"
+    
+    cancer_type ="ov"
     if cancer_type == "brca":
-        ds_list = ["","-d10","-d100"]
+        #ds_list = ["","-d10","-d100"]
+        ds_list = [("-new-BRCA","-ICGC-BRCA"),("-new-BRCA","-new-BRCA")]
     elif cancer_type == "ov":
-        ds_list = ["", "-msk"]
+        #ds_list = ["", "-msk"]
+        ds_list = [("-new-OV","-TCGA-OV"), ("-new-OV","-new-OV")]
 
     for dl in ds_list:
         if cancer_type == "brca":
-            out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
+            #out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
+            out_sbs = join(msk_dir, "sigma-direct-brca-d500.tsv")
             #sigma_out = join(msk_dir, "sigma-wxs-ov-msk-sbs-out.tsv")
-            sigma_out = join(msk_dir, "t0-sigma-wgs-brca%s-sbs-out.tsv"%dl)
+            sigma_out = join(msk_dir,"t0-sigma-direct-brca-d500-out.tsv")
             # sigma_formatter(in_sbs, out_sbs)
         elif cancer_type == "ov":
-            out_sbs = join(msk_dir, "sigma-wxs-ov%s-sbs.tsv"%dl)
-            sigma_out = join(msk_dir, "t0-sigma-wxs-ov%s-sbs-out.tsv"%dl)
+            #out_sbs = join(msk_dir, "sigma-wxs-ov%s-sbs.tsv"%dl)
+            out_sbs = join(msk_dir, "sigma-direct-ov-d10.tsv")
+            #sigma_out = join(msk_dir, "t0-sigma-wxs-ov%s-sbs-out.tsv"%dl)
+            sigma_out = join(msk_dir,"t0-sigma-direct-ov-d10-out.tsv")
         if len(dl)>0:
                 #panels
                 upper = 5
@@ -198,27 +209,33 @@ if __name__ == "__main__":
     brca_sigs = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     # exposures or assignments
     #setting = ["exposures","assignments"]
-    setting = ["expected_topics"]
+    setting = ["assignments"]
     # cancer type: ov or brca
-    cancer_type = "ov"
+    cancer_type = "brca"
     cutoff = 0
     if cancer_type == "brca":
         sig_list = brca_sigs
-        ds_list = [("",""),("-ds10",""),("-ds10","-ds10"), ("-ds100",""), ("-ds100","-ds100")]
+        #ds_list = [("",""),("-ds10",""),("-ds10","-ds10"), ("-ds100",""), ("-ds100","-ds100")]
+        ds_list = [("-new-BRCA","-ICGC-BRCA"),("-new-BRCA","-new-BRCA")]
     elif cancer_type == "ov":
         sig_list = ov_sigs
-        ds_list = [("",""), ("-msk-region",""), ("-msk-region", "-msk-region")]
-    expo_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles/zero-threshold-mix-out"
+        #ds_list = [("",""), ("-msk-region",""), ("-msk-region", "-msk-region")]
+        ds_list = [("-new-OV","-TCGA-OV"), ("-new-OV","-new-OV")]
+    expo_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles/direct_ds"
     
     for st in setting:
         for dl in ds_list:
             print("Now the setting is %s"%st)
             if cancer_type == "brca":
-                expo_np = join(expo_dir, "%s-ICGC-BRCA%s-ICGC-BRCA%s.npy"%(st,dl[0],dl[1]))
-                raw_M = join(msk_dir, "sigma-wgs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
+                #expo_np = join(expo_dir, "%s-ICGC-BRCA%s-ICGC-BRCA%s.npy"%(st,dl[0],dl[1]))
+                expo_np = join(expo_dir,"%s%s%s.npy"%(st, dl[0],dl[1]))
+                #raw_M = join(msk_dir, "sigma-wgs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
+                raw_M = join(msk_dir, "sigma-direct-brca-d500.tsv")
             elif cancer_type == "ov":
-                expo_np = join(expo_dir, "%s-TCGA-OV%s-TCGA-OV%s.npy"%(st, dl[0],dl[1]))
-                raw_M = join(msk_dir, "sigma-wxs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
+                #expo_np = join(expo_dir, "%s-TCGA-OV%s-TCGA-OV%s.npy"%(st, dl[0],dl[1]))
+                expo_np = join(expo_dir,"%s%s%s.npy"%(st, dl[0],dl[1]))
+                #raw_M = join(msk_dir, "sigma-wxs-%s%s-sbs.tsv"%(cancer_type,dl[0]))
+                raw_M = join(msk_dir, "sigma-direct-ov-d10.tsv")
             if len(dl[0])>0:
                 #panels
                 upper = 5
