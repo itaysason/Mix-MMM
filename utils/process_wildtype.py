@@ -60,20 +60,21 @@ def sele_df(previous_surv_f, doc_surv_pref, ov_brca_j):
     for perc in percent:
         status = []
         perc_bina = []
-        if perc > 0:
-            sig_threshold = np.percentile(all_exp,perc)
-        else:
-            sig_threshold = 0
+        sig_threshold = sorted(all_exp)[int(len(all_exp)*perc/100.0)]
         for j in range(len(doc_df.index)):
             id_4 = list(doc_df['id'])[j][-4:]
-            if (ov_dict[id_4] == 0) and (float(prev_df['exposure_sig3'][j])<=sig_threshold):
-                status.append("Sig3-")
+            now_expo = float(list(doc_df['exposure_sig3'])[j])
+            if (ov_dict[id_4] == 0) and (now_expo <=sig_threshold):
+                now_stat = "Sig3-"
+                status.append(now_stat)
                 perc_bina.append(0)
-            elif (ov_dict[id_4] == 0) and (float(prev_df['exposure_sig3'][j])>sig_threshold):
-                status.append("Sig3+")
+            elif (ov_dict[id_4] == 0) and (now_expo > sig_threshold):
+                now_stat = "Sig3+"
+                status.append(now_stat)
                 perc_bina.append(1)
             elif (ov_dict[id_4] == 1):
-                status.append("BRCA mutations")
+                now_stat = "BRCA mutations"
+                status.append(now_stat)
                 perc_bina.append("na")
         doc_df['status'] = status
         doc_df['perc_bina']=perc_bina
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     # data type: assignments, exposures
     #dat_type = ["assignments", "exposures"]
     dat_type = ["assignments"]
-    part_type = [2]
+    part_type = [2,3,4]
     #dat_type = ["exposures"]
     for pt in part_type:
         for dl in ds_list:
