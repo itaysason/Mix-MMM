@@ -66,8 +66,6 @@ def process_sample_cv(sample_cv_dir='experiments/sampleCV'):
 def process_BIC(trained_models_dir='experiments/trained_models'):
     datasets = os.listdir(trained_models_dir)
     for dataset in datasets:
-        if 'new' not in dataset:
-            continue
         data, _ = get_data(dataset)
         num_data_points = np.sum(data)
         print(dataset + ':')
@@ -115,9 +113,9 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                         num_params = (num_clusters - 1) + (num_sigs - 1) * num_clusters + (96 - 1) * num_sigs
                         # If we use smoothing I think we need to add the number of "data points" we added
                         print(model, np.log(num_data_points) * num_params - 2 * best_score, best_score)
-                        BIC_scores.append(np.log(num_data_points) * num_params - 2 * best_score)
                         clusters.append(num_clusters)
                         sigs.append(num_sigs)
+                        BIC_scores.append(np.log(num_data_points) * num_params - 2 * best_score)
                 print('\n')
                 clusters = np.array(clusters, dtype='int')
                 sigs = np.array(sigs, dtype='int')
@@ -152,7 +150,11 @@ def process_BIC(trained_models_dir='experiments/trained_models'):
                     curr_BIC_scores = np.array([curr_BIC_scores[arg_sort_curr_clusters]])
                     ax.plot_wireframe(curr_clusters, curr_sigs, curr_BIC_scores, rstride=1, cstride=1)
 
-                plt.title(dataset)
+                ax.set_xlabel('clusters')
+                ax.set_ylabel('signatures')
+                ax.set_zlabel('BIC score')
+                # plt.title('BIC score {}'.format(dataset))
+                plt.savefig('BIC_{}.pdf'.format(dataset))
                 plt.show()
 
 
@@ -161,6 +163,8 @@ def compare_signatures():
     cosmic_signatures = get_cosmic_signatures()
 
     dirs = ['experiments/trained_models/MSK-ALL/denovo/mix_010clusters_006signatures']
+    dirs = ['experiments/trained_models/TCGA-OV/denovo/mix_004clusters_002signatures']
+    # dirs = ['experiments/trained_models/OV-ds2/denovo/mix_003clusters_002signatures']
     for d in dirs:
         print('\n{}'.format(d))
         best_score = -np.inf
@@ -236,8 +240,8 @@ def compare_signatures_NMF(range_signatures):
                 sigs[i] = np.argmax(corr_correlations) + 1
                 corrs[i] = np.max(corr_correlations).round(3)
                 print(i, np.argmax(corr_correlations) + 1, np.max(corr_correlations))
-            corrs = corrs[np.argsort(sigs)]
-            sigs = sigs[np.argsort(sigs)]
+            sigs = sigs[np.argsort(corrs)]
+            corrs = corrs[np.argsort(corrs)]
             print('{} - {}'.format(sigs.tolist(), corrs.tolist()))
 
 
@@ -299,7 +303,7 @@ def cluster_assignment_signature_compatability(model, assignment_intersections, 
     return
 
 
-def jaccard_similarity(clusters1, clusters2):
+def AMI_score(clusters1, clusters2):
     from sklearn.metrics.cluster import adjusted_mutual_info_score
     return adjusted_mutual_info_score(clusters1, clusters2)
 
@@ -340,7 +344,7 @@ def compare_clusters():
             assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
                 np.logical_and(sample_cluster_assignment_MIX == cluster, sample_cancer_assignments == cancer))
 
-    print('MIX clustering on all samples: jaccard = {}'.format(jaccard_similarity(sample_cancer_assignments, sample_cluster_assignment_MIX)))
+    print('MIX clustering on all samples: jaccard = {}'.format(AMI_score(sample_cancer_assignments, sample_cluster_assignment_MIX)))
 
     assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
     for cluster in range(model.num_clusters):
@@ -350,7 +354,7 @@ def compare_clusters():
                                np.logical_and(sample_cluster_assignment_MIX == cluster,
                                               sample_cancer_assignments == cancer)))
 
-    print('MIX clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], sample_cluster_assignment_MIX[num_mutations_per_sample >= rich_sample_threshold])))
+    print('MIX clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], sample_cluster_assignment_MIX[num_mutations_per_sample >= rich_sample_threshold])))
 
     # KMeans clustering
     tmp1 = []
@@ -369,8 +373,8 @@ def compare_clusters():
                 assignment_intersections[cluster, cancer_idx] += np.count_nonzero(
                     np.logical_and(kmeans_clusters == cluster, sample_cancer_assignments == cancer))
 
-        print('KMeans clustering on all samples: jaccard = {}'.format(jaccard_similarity(sample_cancer_assignments, kmeans_clusters)))
-        tmp1.append(jaccard_similarity(sample_cancer_assignments, kmeans_clusters))
+        print('KMeans clustering on all samples: jaccard = {}'.format(AMI_score(sample_cancer_assignments, kmeans_clusters)))
+        tmp1.append(AMI_score(sample_cancer_assignments, kmeans_clusters))
 
         rich_sample_threshold = 10
         assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
@@ -380,8 +384,8 @@ def compare_clusters():
                     np.logical_and(num_mutations_per_sample >= rich_sample_threshold,
                                    np.logical_and(kmeans_clusters == cluster, sample_cancer_assignments == cancer)))
 
-        print('KMeans clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold])))
-        tmp2.append(jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
+        print('KMeans clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold, AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold])))
+        tmp2.append(AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
 
         # NMF + KMeans clustering
         d = 'experiments/NMF_denovo_models'
@@ -403,8 +407,8 @@ def compare_clusters():
                     np.logical_and(nmf_kmeans_clusters == cluster, sample_cancer_assignments == cancer))
 
         print('NMF + KMeans clustering on all samples: jaccard = {}'.format(
-            jaccard_similarity(sample_cancer_assignments, nmf_kmeans_clusters)))
-        tmp3.append(jaccard_similarity(sample_cancer_assignments, nmf_kmeans_clusters))
+            AMI_score(sample_cancer_assignments, nmf_kmeans_clusters)))
+        tmp3.append(AMI_score(sample_cancer_assignments, nmf_kmeans_clusters))
 
         rich_sample_threshold = 10
         assignment_intersections = np.zeros((model.num_clusters, len(cancer_types)), dtype='int')
@@ -415,12 +419,12 @@ def compare_clusters():
                                    np.logical_and(nmf_kmeans_clusters == cluster, sample_cancer_assignments == cancer)))
 
         print('NMF+ KMeans clustering on samples with {} or more mutations: jaccard: {}'.format(rich_sample_threshold,
-                                                                                           jaccard_similarity(
+                                                                                                AMI_score(
                                                                                                sample_cancer_assignments[
                                                                                                    num_mutations_per_sample >= rich_sample_threshold],
                                                                                                nmf_kmeans_clusters[
                                                                                                    num_mutations_per_sample >= rich_sample_threshold])))
-        tmp4.append(jaccard_similarity(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], nmf_kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
+        tmp4.append(AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], nmf_kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold]))
     print(tmp1)
     print(tmp2)
     print(tmp3)
@@ -431,6 +435,213 @@ def compare_clusters():
     print(5 + np.argmax(tmp4), np.max(tmp4))
 
 
-process_BIC('experiments/trained_models')
+def plot_cluster_AMI(range_clusters):
+    MIX_num_sginatures = 6
+    rich_sample_threshold = 10
+    data, active_signatures = get_data('MSK-ALL')
+
+    num_mutations_per_sample = data.sum(1)
+
+    all_df = pd.read_csv("data/processed/oncotype_counts.txt", sep='\t')
+    all_df['Counts'] = all_df['Counts'].astype(int)
+    all_df = all_df[all_df['Counts'] > 100]
+    cancer_types = np.array(all_df['Oncotree'])
+
+    sample_cancer_assignments = []
+    for oc in cancer_types:
+        dat_f = "data/processed/%s_counts.npy" % oc
+        tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
+        sample_cancer_assignments.extend([oc] * len(tmp_data))
+    sample_cancer_assignments = np.array(sample_cancer_assignments)
+
+    d = 'experiments/NMF_denovo_models'
+    best_score = -np.inf
+    best_run = None
+    for run in os.listdir(d):
+        curr_score = load_json(os.path.join(d, run))['log-likelihood']
+        if curr_score >= best_score:
+            best_score = curr_score
+            best_run = run
+
+    NMF_pi = np.array(load_json(os.path.join(d, best_run))['parameters']['pi'])
+
+    MIX_AMI_scores = np.zeros((len(range_clusters), 2))
+    MIX_refit_AMI_scores = np.zeros((len(range_clusters), 2))
+    KMeans_AMI_scores = np.zeros((len(range_clusters), 2))
+    NMF_KMeans_AMI_scores = np.zeros((len(range_clusters), 2))
+    for idx, num_clusters in enumerate(range_clusters):
+        # MIX denovo
+        d = 'experiments/trained_models/MSK-ALL/denovo/mix_{}clusters_{}signatures'.format(str(num_clusters).zfill(3), str(MIX_num_sginatures).zfill(3))
+        best_score = -np.inf
+        best_run = None
+        for run in os.listdir(d):
+            curr_score = load_json(os.path.join(d, run))['log-likelihood']
+            if curr_score >= best_score:
+                best_score = curr_score
+                best_run = run
+
+        model = get_model(load_json(os.path.join(d, best_run))['parameters'])
+        sample_cluster_assignment_MIX, _, _ = model.predict(data)
+        MIX_AMI_scores[idx, 0] = AMI_score(sample_cancer_assignments, sample_cluster_assignment_MIX)
+        MIX_AMI_scores[idx, 1] = AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], sample_cluster_assignment_MIX[num_mutations_per_sample >= rich_sample_threshold])
+
+        # MIX refit
+        d = 'experiments/trained_models/MSK-ALL/refit/mix_{}clusters_017signatures'.format(str(num_clusters).zfill(3))
+        best_score = -np.inf
+        best_run = None
+        for run in os.listdir(d):
+            curr_score = load_json(os.path.join(d, run))['log-likelihood']
+            if curr_score >= best_score:
+                best_score = curr_score
+                best_run = run
+
+        model = get_model(load_json(os.path.join(d, best_run))['parameters'])
+        sample_cluster_assignment_MIX, _, _ = model.predict(data)
+        MIX_refit_AMI_scores[idx, 0] = AMI_score(sample_cancer_assignments, sample_cluster_assignment_MIX)
+        MIX_refit_AMI_scores[idx, 1] = AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], sample_cluster_assignment_MIX[num_mutations_per_sample >= rich_sample_threshold])
+
+        # KMeans clustering
+        nmf_cluster_model = KMeans(num_clusters)
+        nmf_cluster_model.fit(data)
+        kmeans_clusters = nmf_cluster_model.predict(data)
+
+        KMeans_AMI_scores[idx, 0] = AMI_score(sample_cancer_assignments, kmeans_clusters)
+        KMeans_AMI_scores[idx, 1] = AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold])
+
+        # NMF + KMeans clustering
+        nmf_cluster_model = KMeans(num_clusters)
+        nmf_cluster_model.fit(NMF_pi)
+        nmf_kmeans_clusters = nmf_cluster_model.predict(NMF_pi)
+
+        NMF_KMeans_AMI_scores[idx, 0] = AMI_score(sample_cancer_assignments, nmf_kmeans_clusters)
+        NMF_KMeans_AMI_scores[idx, 1] = AMI_score(sample_cancer_assignments[num_mutations_per_sample >= rich_sample_threshold], nmf_kmeans_clusters[num_mutations_per_sample >= rich_sample_threshold])
+
+    print(MIX_AMI_scores)
+    print(MIX_refit_AMI_scores)
+    print(KMeans_AMI_scores)
+    print(NMF_KMeans_AMI_scores)
+    plt.plot(range_clusters, MIX_AMI_scores[:, 0], label='MIX-denovo')
+    plt.plot(range_clusters, MIX_refit_AMI_scores[:, 0], label='MIX-refit')
+    plt.plot(range_clusters, KMeans_AMI_scores[:, 0], label='KMeans')
+    plt.plot(range_clusters, NMF_KMeans_AMI_scores[:, 0], label='NMF+KMeans')
+    # plt.title('All samples AMI score')
+    plt.xlabel('clusters')
+    plt.ylabel('AMI')
+    plt.legend(loc='lower right')
+    plt.savefig('AMI_all.pdf')
+    plt.show()
+
+    plt.plot(range_clusters, MIX_AMI_scores[:, 1], label='MIX')
+    plt.plot(range_clusters, MIX_refit_AMI_scores[:, 1], label='MIX-refit')
+    plt.plot(range_clusters, KMeans_AMI_scores[:, 1], label='KMeans')
+    plt.plot(range_clusters, NMF_KMeans_AMI_scores[:, 1], label='NMF+KMeans')
+    # plt.title('Filtered AMI score')
+    plt.xlabel('clusters')
+    plt.ylabel('AMI')
+    plt.legend(loc='lower right')
+    plt.savefig('AMI_filtered.pdf')
+    plt.show()
+    return
+
+
+def plot_sig_correlations(range_signatures):
+    cosmic_signatures = get_cosmic_signatures()
+    random_seeds = [140296, 142857, 314179, 847662, 3091985, 28021991, 554433, 123456, 654321, 207022]
+    mix_dir = 'experiments/trained_models/MSK-ALL/denovo/'
+    a, _ = get_data('MSK-ALL')
+    num_data_points = a.sum()
+    for fig_pos, num_sigs in enumerate(range_signatures):
+        x_axis = np.array([str(i + 1) for i in range(num_sigs)])
+        plt.axhline(0.85, color='grey', linestyle='--', label='_nolegend_')
+        plt.axhline(0.9, color='grey', linestyle='--', label='_nolegend_')
+        plt.axhline(0.95, color='grey', linestyle='--', label='_nolegend_')
+        best_model_path = ''
+        best_bic_score = np.inf
+        for model in os.listdir(mix_dir):
+            model_num_clusters = int(model.split('_')[1][:3])
+            model_num_sigs = int(model.split('_')[2][:3])
+            if num_sigs != model_num_sigs:
+                continue
+            experiment_dir = os.path.join(mix_dir, model)
+            runs = os.listdir(experiment_dir)
+            best_score = -np.inf
+            best_run_path = ''
+            for run in runs:
+                total_score = load_json(os.path.join(experiment_dir, run))['log-likelihood']
+                if total_score > best_score:
+                    best_score = total_score
+                    best_run_path = os.path.join(experiment_dir, run)
+            if len(runs) > 0:
+                num_params = (model_num_clusters - 1) + (model_num_sigs - 1) * model_num_clusters + (96 - 1) * model_num_sigs
+                bic_score = np.log(num_data_points) * num_params - 2 * best_score
+                if bic_score < best_bic_score:
+                    best_bic_score = bic_score
+                    best_model_path = best_run_path
+        e = np.array(load_json(best_model_path)['parameters']['e'])
+        sigs = np.zeros(num_sigs, dtype='int')
+        corrs = np.zeros(num_sigs)
+        signature_correlations = np.corrcoef(e, cosmic_signatures)
+        for i in range(num_sigs):
+            corr_correlations = signature_correlations[i, num_sigs:]
+            sigs[i] = np.argmax(corr_correlations) + 1
+            corrs[i] = np.max(corr_correlations).round(3)
+            signature_correlations[:, num_sigs + np.argmax(corr_correlations)] = 0
+        sigs = sigs[np.argsort(-corrs)]
+        corrs = corrs[np.argsort(-corrs)]
+        curr_x_axis = x_axis[corrs >= 0.8]
+        sigs = sigs[corrs >= 0.8]
+        corrs = corrs[corrs >= 0.8]
+        plt.plot(curr_x_axis, corrs, '.-k', color='C0')
+        for i in range(len(sigs)):
+            plt.annotate(str(sigs[i]), (i, corrs[i] + 0.002), color='C0')
+        print('{} - {} - {} - {}'.format(best_model_path, sigs.tolist(), corrs.tolist(), sum(corrs)))
+
+        for dataset in ['MSK-ALL', 'clustered-MSK-ALL']:
+            a, _ = get_data(dataset)
+            sigs = np.zeros(num_sigs, dtype='int')
+            corrs = np.zeros(num_sigs)
+            best_e = np.zeros((num_sigs, 96))
+            best_score = np.inf
+            for seed in random_seeds:
+                model = NMF(num_sigs, max_iter=1000, random_state=seed)
+                pi = model.fit_transform(a)
+                e = model.components_
+                pi *= e.sum(1)
+                e /= e.sum(1, keepdims=True)
+                score = np.linalg.norm(a - pi @ e)
+                if score < best_score:
+                    best_score = score
+                    best_e = e
+
+            signature_correlations = np.corrcoef(best_e, cosmic_signatures)
+            for i in range(num_sigs):
+                corr_correlations = signature_correlations[i, num_sigs:]
+                sigs[i] = np.argmax(corr_correlations) + 1
+                corrs[i] = np.max(corr_correlations).round(3)
+                signature_correlations[:, num_sigs + np.argmax(corr_correlations)] = 0
+            sigs = sigs[np.argsort(-corrs)]
+            corrs = corrs[np.argsort(-corrs)]
+            curr_x_axis = x_axis[corrs >= 0.8]
+            sigs = sigs[corrs >= 0.8]
+            corrs = corrs[corrs >= 0.8]
+            if dataset == 'MSK-ALL':
+                color = 'C1'
+            else:
+                color = 'C2'
+            plt.plot(curr_x_axis, corrs, '.-k', color=color)
+            for i in range(len(sigs)):
+                plt.annotate(str(sigs[i]), (i, corrs[i] + 0.002), color=color)
+            print('{} - {} - {}'.format(sigs.tolist(), corrs.tolist(), sum(corrs)))
+
+        plt.yticks(0.8 + np.arange(5) * 0.05)
+        # plt.title('{} signatures'.format(num_sigs))
+        plt.legend(['MIX', 'NMF', 'clustered-NMF'], loc='lower left')
+        plt.savefig('{}-signatures.pdf'.format(num_sigs))
+        plt.show()
+
+
+# process_BIC('experiments/trained_models')
 # compare_signatures()
+# plot_sig_correlations(range(4, 12))
 # compare_clusters()
+# plot_cluster_AMI(range(1, 15))

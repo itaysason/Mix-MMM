@@ -101,6 +101,7 @@ def get_data(dataset, threshold=100):
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
         loaded_onco = []
+        onco_num_mutations = []
         for oc in oncocode:
             dat_f = "data/processed/%s_counts.npy" % oc
             if not os.path.isfile(dat_f):
@@ -109,11 +110,11 @@ def get_data(dataset, threshold=100):
                 tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
                 tmp_data_ls.append(tmp_data)
                 loaded_onco.append(oc)
+                onco_num_mutations.append(tmp_data.sum())
         data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (
-            np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
+        # print("Successfully loaded %d samples from %d datasets: %s" % (np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
-        print("Here are activate signatures", active_signatures)
+        # print("Here are activate signatures", active_signatures)
     elif dataset == 'clustered-MSK-ALL':
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
@@ -127,73 +128,84 @@ def get_data(dataset, threshold=100):
                 tmp_data_ls.append(tmp_data.sum(0, keepdims=True))
                 loaded_onco.append(oc)
         data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (
-            np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
+        # print("Successfully loaded %d samples from %d datasets: %s" % (
+        #     np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
-        print("Here are activate signatures", active_signatures)
-    elif dataset == 'MSK-filtered':
-        min_num_mutations = 5
-        min_num_samples = 50
-        oncocode = get_oncocode(0)
-        tmp_data_ls = []
-        loaded_onco = []
-        cancer_clusters = []
-        for oc in oncocode:
-            dat_f = "data/processed/%s_counts.npy" % oc
-            if not os.path.isfile(dat_f):
-                Warning('%s is not loaded: file does not exist!' % dat_f)
-            else:
-                tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
-                tmp_data = tmp_data[tmp_data.sum(1) >= min_num_mutations]
-                if len(tmp_data) >= min_num_samples:
-                    tmp_data_ls.append(tmp_data)
-                    loaded_onco.append(oc)
-                    cancer_clusters.extend([oc] * len(tmp_data))
-        data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (
-            np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
-        active_signatures = get_active_sig(loaded_onco)
-        print("Here are activate signatures", active_signatures)
-    elif dataset == 'MSK-filtered2':
-        min_num_mutations = 5
-        min_num_samples = 50
-        oncocode = get_oncocode(0)
-        tmp_data_ls = []
-        loaded_onco = []
-        cancer_clusters = []
-        for oc in oncocode:
-            dat_f = "data/processed/%s_counts.npy" % oc
-            if not os.path.isfile(dat_f):
-                Warning('%s is not loaded: file does not exist!' % dat_f)
-            else:
-                tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
-                tmp_data = tmp_data[tmp_data.sum(1) >= min_num_mutations]
-                if len(tmp_data) >= min_num_samples:
-                    tmp_data_ls.append(tmp_data)
-                    loaded_onco.append(oc)
-                    cancer_clusters.extend([oc] * len(tmp_data))
-        data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (
-            np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
-        active_signatures = get_active_sig(loaded_onco)
-        print("Here are activate signatures", active_signatures)
+        # print("Here are activate signatures", active_signatures)
     elif dataset == 'TCGA-OV':
         data = np.load('data/WXS-TCGA-OV/wxs-ov-all_counts.npy').astype('float')
         active_signatures = [1, 3, 5]
-    elif dataset == 'ICGC-BRCA-ds100':
-        data = np.load('data/WGS-NikZainal-BRCA/downsize_100_counts.npy').astype('float')
+    elif dataset == 'BRCA-ds100':
+        data = np.load('data/brca_downsize/brca-downsize100_counts.npy').astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'ICGC-BRCA-ds10':
-        data = np.load('data/WGS-NikZainal-BRCA/downsize_10_counts.npy').astype('float')
+    elif dataset == 'BRCA-ds250':
+        data = np.load('data/brca_downsize/brca-downsize250_counts.npy').astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'new-BRCA':
-        data = np.load('data/WGS-NikZainal-BRCA/new-wgs-brca-d500_counts.npy').astype('float')
+    elif dataset == 'BRCA-ds500':
+        data = np.load('data/brca_downsize/brca-downsize500_counts.npy').astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'TCGA-OV-msk-region':
-        data = np.load('data/WXS-TCGA-OV/wxs-ov-msk-region_counts.npy').astype('float')
+    elif dataset == 'OV-ds2':
+        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
         active_signatures = [1, 3, 5]
-    elif dataset == 'new-OV':
-        data = np.load('data/WXS-TCGA-OV/new-wxs-ov-d10_counts.npy').astype('float')
+    elif dataset == 'OV-ds5':
+        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds10':
+        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds2-part1':
+        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[:num_samples // 2]]
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds5-part1':
+        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[:num_samples // 2]]
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds10-part1':
+        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[:num_samples // 2]]
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds2-part2':
+        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[num_samples // 2:]]
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds5-part2':
+        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[num_samples // 2:]]
+        active_signatures = [1, 3, 5]
+    elif dataset == 'OV-ds10-part2':
+        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
+        shuffle_seed = 10033
+        np.random.seed(shuffle_seed)
+        num_samples = len(data)
+        indices = np.arange(num_samples)
+        np.random.shuffle(indices)
+        data = data[indices[num_samples // 2:]]
         active_signatures = [1, 3, 5]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
