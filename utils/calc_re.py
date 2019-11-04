@@ -2,7 +2,22 @@ import pandas as pd
 import numpy as np
 from os.path import join
 import re
-from calc_expdiff import get_index
+
+def get_index(fl_id, ds_id):
+    """
+    input: full id, downsized id
+    output: all position of the downsized id
+    """
+    #flatten if nested:
+    if len(fl_id[0])==1:
+        fl_id = [item for sublist in fl_id for item in sublist]
+        ds_id = [item for sublist in ds_id for item in sublist]
+    fl_dict = dict(zip(fl_id, list(range(len(fl_id)))))
+    #print(fl_dict)
+    ds_index = []
+    for di in ds_id:
+        ds_index.append(fl_dict[di])
+    return ds_index
 
 def sigma_formatter(in_sbs, out_sbs):
     """
@@ -49,7 +64,7 @@ def sub_max(raw_M, recon_M, cutoff,index_list=None):
     print("l2 norm %0.5f"%l2_norm)
     return l2_norm
 
-def comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff, upper):
+def comp_re_sigma(raw_M, sigma_out, index_list, cosmic, cutoff=0):
     """
     compute reconstruction error
     input: the SigMA output file
@@ -87,11 +102,11 @@ def comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff, upper):
             now_expo = float_exp[i][j]
             recon_row += now_expo * now_sig
         row_ls.append(recon_row)
-    pererr = sub_max(raw_M, np.stack(row_ls), cutoff)
+    pererr = sub_max(raw_M, np.stack(row_ls), cutoff, index_list)
     #print(pererr)
     return pererr
 
-def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting, cutoff):
+def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting="assignments", cutoff=0):
     # input: 
     # raw M: raw sbs file, sigma format
     # expo_np: numpy exposure file
@@ -151,15 +166,15 @@ if __name__ == "__main__":
     #out_sbs = join(msk_dir, "sigma-wxs-ov-msk-sbs.tsv")
     
     # cancer type: ov or brca
-    
+    """
     print("Now is sigma")
-    cancer_type ="brca"
+    cancer_type ="ov"
     if cancer_type == "brca":
         #ds_list = ["","-d10","-d100"]
-        ds_list = ['downsize100','downsize250','downsize500']
+        ds_list = ['all','downsize100','downsize250','downsize500']
     elif cancer_type == "ov":
         #ds_list = ["", "-msk"]
-        ds_list = ['downsize2','downsize5','downsize10']
+        ds_list = ['all','downsize2','downsize5','downsize10']
 
     for dl in ds_list:
         if cancer_type == "brca":
@@ -187,27 +202,32 @@ if __name__ == "__main__":
     #setting = ["exposures","assignments"]
     setting = ["assignments"]
     # cancer type: ov or brca
-    cancer_type = "brca"
+    cancer_type = "ov"
     cutoff = 0
     if cancer_type == "brca":
         sig_list = brca_sigs
-        ds_list = [("-BRCA-ds100","-ICGC-BRCA"),("-BRCA-ds100","-BRCA-ds100"),("-BRCA-ds250","-ICGC-BRCA"),("-BRCA-ds250","-BRCA-ds250"),
+        ds_list = [("-ICGC-BRCA", "-ICGC-BRCA"), ("-BRCA-ds100","-ICGC-BRCA"),("-BRCA-ds100","-BRCA-ds100"),("-BRCA-ds250","-ICGC-BRCA"),("-BRCA-ds250","-BRCA-ds250"),
         ("-BRCA-ds500","-ICGC-BRCA"),("-BRCA-ds500","-BRCA-ds500")]
     elif cancer_type == "ov":
         sig_list = ov_sigs
         #ds_list = [("",""), ("-msk-region",""), ("-msk-region", "-msk-region")]
-        ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
+        ds_list = [("-TCGA-OV", "-TCGA-OV"), ("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
     expo_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles/mix_downsize"
-    
+    ratio = []
     for st in setting:
         for dl in ds_list:
             print("Now the setting is %s"%st)
             print(dl)
             expo_np = join(expo_dir,"%s%s%s.npy"%(st, dl[0],dl[1]))
-            ratio = int(re.findall(r'\d+', dl[0])[0])
+            re_int =  re.findall(r'\d+', dl[0])
+            if re_int:
+                ratio = int(re_int[0])
+                ds_id = pd.read_csv(join(msk_dir, "mix_downsize/%s-downsize%d_sample_id.txt"%(cancer_type,ratio)),sep='\n', header=None).values.tolist()
+            else:
+                ds_id = pd.read_csv(join(msk_dir, "mix_downsize/%s-original_sample_id.txt"%(cancer_type)),sep='\n', header=None).values.tolist()
+
             raw_M = join(msk_dir, "%s-all_sigma_sbs.tsv"%cancer_type)
             fl_id = pd.read_csv(join(msk_dir, "mix_downsize/%s-original_sample_id.txt"%cancer_type), sep='\n', header=None).values.tolist()
-            ds_id = pd.read_csv(join(msk_dir, "mix_downsize/%s-downsize%d_sample_id.txt"%(cancer_type,ratio)),sep='\n', header=None).values.tolist()
             index_list = get_index(fl_id, ds_id)
+            #print(index_list)
             pererr = comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, st, cutoff)
-    """

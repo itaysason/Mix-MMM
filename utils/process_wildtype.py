@@ -13,26 +13,10 @@ def wilddict(brca_status_f, ov_brca_j, part_type):
     bina_group = []
     if part_type == 1:
         for gl in group_ls:
-              bina_group.append(0)
-    elif part_type == 2:
-        for gl in group_ls:
-            if (gl == "bi_patho"):
-                bina_group.append(1)
-            else:
+            if (gl == "rest"):
                 bina_group.append(0)
-    elif part_type == 3:
-        for gl in group_ls:
-            if (gl == "bi_patho") or (gl=="bi_vus"):
-                bina_group.append(1)
             else:
-                bina_group.append(0)
-    elif part_type == 4:
-        for gl in group_ls:
-            if (gl == "bi_patho") or (gl == "mono_patho"):
                 bina_group.append(1)
-            else:
-                bina_group.append(0)
-
     brca_dict = dict(zip(list(brca_df['ids']), bina_group))
     with open(ov_brca_j,'w') as out_j:
         json.dump(brca_dict, out_j)
@@ -76,6 +60,7 @@ def sele_df(previous_surv_f, doc_surv_pref, ov_brca_j):
                 now_stat = "BRCA mutations"
                 status.append(now_stat)
                 perc_bina.append("na")
+
         doc_df['status'] = status
         doc_df['perc_bina']=perc_bina
         doc_df.to_csv(doc_surv_pref + "-%d.tsv"%perc, sep='\t',index=None)
@@ -87,17 +72,19 @@ if __name__ == "__main__":
     #platinum_j = join(msk_dir, "platinum-dict.json")
     # exp type: MSK-MSK, WXS, MSK
     #exp_type = ["WXS", "MSK", "MSK-MSK"]
-    ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
+    #ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
+    ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2")]
     # data type: assignments, exposures
     #dat_type = ["assignments", "exposures"]
-    dat_type = ["assignments"]
-    part_type = [2,3,4]
+    #dat_type = ["assignments"]
+    dat_type = ["expected_topics"]
+    part_type = [1]
     #dat_type = ["exposures"]
     for pt in part_type:
         for dl in ds_list:
             for dt in dat_type:
                 #previous_surv_f = join(msk_dir, "sig3-final-TCGA-OV-%s-survial-analysis-%s.tsv"%(et, dt))
-                previous_surv_f = join(msk_dir, "complete-new%s%s-survival-analysis-%s.tsv"%(dl[0],dl[1],dt))
+                previous_surv_f = join(msk_dir, "heldout-new%s%s-survival-analysis-%s.tsv"%(dl[0],dl[1],dt))
                 doc_surv_pref = join(msk_dir, "part%d-status-new%s%s-survival-analysis-%s"%(pt, dl[0], dl[1], dt))
                 wilddict(brca_status_f, ov_brca_j, pt)
                 sele_df(previous_surv_f, doc_surv_pref, ov_brca_j)

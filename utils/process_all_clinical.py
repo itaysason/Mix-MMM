@@ -22,9 +22,9 @@ def concat_expo(select_df_f, npy_f, new_df_f, expo_type):
     bina_item = []
     zero_cnt = 0
     if expo_type == "exposures":
-        expo_item = [items[1] for items in all_npy]
-    elif expo_type == "assignments":
-        expo_item = [items[1]/(sum(items)+1e-9) for items in all_npy]
+        expo_item = [items[0] for items in all_npy]
+    else:
+        expo_item = [items[0]/(sum(items)+1e-9) for items in all_npy]
 
     for expo in expo_item:
         if expo == 0:
@@ -144,8 +144,11 @@ if __name__ == "__main__":
     #row2df(msk_dir, all_clinical, out_csv)
     #id_type = ["WXS", "MSK", "MSK-MSK"]
     #expo_type = ["exposures", "assignments"]
-    ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
-    expo_type = ["assignments"]
+    #ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2"),("-OV-ds5","-TCGA-OV"), ("-OV-ds5","-OV-ds5"),("-OV-ds10","-TCGA-OV"), ("-OV-ds10","-OV-ds10")]
+    #expo_type = ["assignments"]
+    expo_type = ["expected_topics"]
+    ds_list = [("-OV-ds2","-TCGA-OV"), ("-OV-ds2","-OV-ds2")]
+    
     all_df_f = out_csv
     for dl in ds_list:
         for et in expo_type:
@@ -154,5 +157,5 @@ if __name__ == "__main__":
             #selected df
             downsized_df_f = join(msk_dir, "downsize-%s%s%s.csv"%(et,dl[0],dl[1]))
             select_df(msk_dir, all_df_f, id_list_f, downsized_df_f)
-            new_df_f = join(msk_dir, "complete-new%s%s-survival-analysis-%s.tsv"%(dl[0],dl[1],et))
+            new_df_f = join(msk_dir, "heldout-new%s%s-survival-analysis-%s.tsv"%(dl[0],dl[1],et))
             concat_expo(downsized_df_f, npy_f, new_df_f, et)
