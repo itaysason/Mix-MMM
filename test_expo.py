@@ -7,7 +7,7 @@ if __name__ == "__main__":
     msk_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles"
     raw_M = join(msk_dir, "ov-all_sigma_sbs.tsv")
     cosmic = join(msk_dir, "cosmic-signatures.tsv")
-    method = "SigMA"
+    method = "nnls"
     part_ls = [[2,1],[1,2]]
     ds_ls = [2, 5, 10]
     #for ov
@@ -30,7 +30,6 @@ if __name__ == "__main__":
                 expo_np = tmp[1]
                 re_ours = comp_re_ours(raw_M, expo_np, index_list, sig_ls, cosmic)
                 print("When method=%s, downsize ratio=%d, the RE of sigma is %0.4f on part %d data"%(method, dl, re_ours, pl[1]))
-    #TODO: convert format and run sigma first
     elif method == "SigMA":
         sig_part = [1,2]
         for dl in ds_ls:
@@ -47,3 +46,16 @@ if __name__ == "__main__":
                 re_sigma, exp_3 = comp_re_sigma(raw_M, sigma_out, index_list, cosmic)
                 np.save(join(msk_dir, "mix_downsize/sigma_downsize%d_sig3_part%d.npy"%(dl,s)), exp_3, allow_pickle=True)
                 print("When method=%s, downsize ratio=%d, the RE of sigma is %0.4f on part %d data"%(method, dl, re_sigma, s))
+    elif method == "nnls":
+        sig_part = [1,2]
+        for dl in ds_ls:
+            index_all = np.load(join(msk_dir,"mix_downsize/indices/OV-ds%d-indices.npy"%dl))
+            for s in sig_part:
+                #index_all = np.load(join(msk_dir,"mix_downsize/indices/OV-ds%d-indices.npy"%dl))
+                if s == 1:
+                    index_list =  index_all[:len(index_all) // 2] 
+                elif s == 2:
+                    index_list = index_all[len(index_all) // 2:]
+                expo_np = np.load(join(msk_dir, "mix_downsize/models/nnls-OV-ds%d-part%d-exposure.npy"%(dl, s)))
+                re_ours = comp_re_ours(raw_M, expo_np, index_list, sig_ls, cosmic)
+                print("When method=%s, downsize ratio=%d, the RE of sigma is %0.4f on part %d data"%(method, dl, re_ours, s))

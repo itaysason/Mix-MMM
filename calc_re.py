@@ -3,6 +3,7 @@ import numpy as np
 from os.path import join
 import re
 #from calc_expdiff import get_index
+
 def get_index(fl_id, ds_id):
     """
     input: full id, downsized id
@@ -18,8 +19,6 @@ def get_index(fl_id, ds_id):
     for di in ds_id:
         ds_index.append(fl_dict[di])
     return ds_index
-
-
 
 def sigma_formatter(in_sbs, out_sbs):
     """
