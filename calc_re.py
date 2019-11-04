@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from os.path import join
 import re
-
+#from calc_expdiff import get_index
 def get_index(fl_id, ds_id):
     """
     input: full id, downsized id
@@ -18,6 +18,8 @@ def get_index(fl_id, ds_id):
     for di in ds_id:
         ds_index.append(fl_dict[di])
     return ds_index
+
+
 
 def sigma_formatter(in_sbs, out_sbs):
     """
@@ -55,11 +57,12 @@ def sub_max(raw_M, recon_M, cutoff,index_list=None):
 
     sbs_M = np.stack(sbs_M_ls)
     sbs_M = sbs_M / sbs_M.sum(axis=1)[:, np.newaxis]
-    if index_list:
+    if len(index_list)>0:
         sbs_M = sbs_M[index_list,:]
     #print(np.shape(recon_M))
     #print("--")
     #print(np.shape(sbs_M))
+    #print(np.shape(recon_M))
     l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)
     print("l2 norm %0.5f"%l2_norm)
     return l2_norm
@@ -92,6 +95,7 @@ def comp_re_sigma(raw_M, sigma_out, index_list, cosmic, cutoff=0):
     #select signatures
     cosmic_df = pd.read_csv(cosmic, sep='\t')
     row_ls = []
+    exp_3 = [0]*len(sig_num)
     for i in range(len(sig_num)):
         # for each sample
         recon_row = [0]*96
@@ -101,10 +105,12 @@ def comp_re_sigma(raw_M, sigma_out, index_list, cosmic, cutoff=0):
             now_sig = tmp_sig.values[0][1:]
             now_expo = float_exp[i][j]
             recon_row += now_expo * now_sig
+            if int(sig_num[i][j]) == 3:
+                exp_3[i] = float_exp[i][j]
         row_ls.append(recon_row)
     pererr = sub_max(raw_M, np.stack(row_ls), cutoff, index_list)
     #print(pererr)
-    return pererr
+    return pererr, exp_3
 
 def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting="assignments", cutoff=0):
     # input: 
@@ -118,16 +124,16 @@ def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting="assignme
     # select signatures
     cosmic_df = pd.read_csv(cosmic, sep='\t')
     row_ls = []
-    all_np =  np.load(expo_np, allow_pickle=True)
-    all_np = all_np / all_np.sum(axis=1)[:, np.newaxis]
+    #all_np =  np.load(expo_np, allow_pickle=True)
+    expo_np = expo_np / expo_np.sum(axis=1)[:, np.newaxis]
 
-    for i in range(np.shape(all_np)[0]):
+    for i in range(np.shape(expo_np)[0]):
         recon_row = [0]*96
         for j in range(len(sig_list)):
             tmp_sig = cosmic_df.loc[cosmic_df['Signature'] == int(sig_list[j])]
             #the first one is the number of signatures
             now_sig = tmp_sig.values[0][1:]
-            now_expo = all_np[i][j]
+            now_expo = expo_np[i][j]
             recon_row += now_expo * now_sig
         row_ls.append(recon_row)
     recon_M = np.stack(row_ls)
@@ -230,4 +236,5 @@ if __name__ == "__main__":
             fl_id = pd.read_csv(join(msk_dir, "mix_downsize/%s-original_sample_id.txt"%cancer_type), sep='\n', header=None).values.tolist()
             index_list = get_index(fl_id, ds_id)
             #print(index_list)
-            pererr = comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, st, cutoff)
+            pererr, exp_3 = comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, st, cutoff)
+            np.save(join(msk_dir, "mix_downsize/sigma_downsize%d_sig3.npy"%dl), exp_3, allow_pickle=True)
