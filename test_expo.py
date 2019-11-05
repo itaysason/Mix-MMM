@@ -1,6 +1,8 @@
 from src.utils import get_model, load_json
 from os.path import join
 import numpy as np
+import sys
+sys.path.insert(0, './utils')
 from calc_re import comp_re_ours, comp_re_sigma, get_index
 
 if __name__ == "__main__":

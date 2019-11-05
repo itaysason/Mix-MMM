@@ -43,30 +43,19 @@ def sigma_formatter(in_sbs, out_sbs):
     in_df = in_df[cols]
     in_df.to_csv(out_sbs, sep=',', index=None)
 
-def sub_max(raw_M, recon_M, cutoff,index_list=None):
-    raw_sbs = pd.read_csv(raw_M,sep=',')
-    #remove the last column
-    all_sbs_M = np.stack([item[:96] for item in raw_sbs.values])
-    sbs_M_ls = []
-    sele_row = []
-    for i in range(np.shape(all_sbs_M)[0]):
-        if sum(all_sbs_M[i,:])>cutoff:
-            sbs_M_ls.append(all_sbs_M[i,:])
-            sele_row.append(i)
-
-    sbs_M = np.stack(sbs_M_ls)
-    sbs_M = sbs_M / sbs_M.sum(axis=1)[:, np.newaxis]
+def sub_max(raw_sbs, recon_M, index_list=None):
+    #raw_sbs = pd.read_csv(raw_M,sep=',')
+    # remove the last tumor id column
+    raw_sbs_M = np.stack([item[:96] for item in raw_sbs.values])
+    # normalize
+    sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
     if len(index_list)>0:
+        #select those rows
         sbs_M = sbs_M[index_list,:]
-    #print(np.shape(recon_M))
-    #print("--")
-    #print(np.shape(sbs_M))
-    #print(np.shape(recon_M))
     l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)
-    print("l2 norm %0.5f"%l2_norm)
     return l2_norm
 
-def comp_re_sigma(raw_M, sigma_out, index_list, cosmic, cutoff=0):
+def comp_re_sigma(raw_M, sigma_out, index_list, cosmic):
     """
     compute reconstruction error
     input: the SigMA output file
@@ -107,21 +96,22 @@ def comp_re_sigma(raw_M, sigma_out, index_list, cosmic, cutoff=0):
             if int(sig_num[i][j]) == 3:
                 exp_3[i] = float_exp[i][j]
         row_ls.append(recon_row)
-    pererr = sub_max(raw_M, np.stack(row_ls), cutoff, index_list)
+    pererr = sub_max(raw_M, np.stack(row_ls), index_list)
     #print(pererr)
     return pererr, exp_3
 
-def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting="assignments", cutoff=0):
-    # input: 
-    # raw M: raw sbs file, sigma format
-    # expo_np: numpy exposure file
-    # sig_list: selected list of signatures
-    # cosmic: a list of signatures
-    # setting: assignments or exposures
-    # output: 
-    # errors per mutation 
-    # select signatures
-    cosmic_df = pd.read_csv(cosmic, sep='\t')
+def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f):
+    """
+    input: 
+        raw M: raw sbs file, sigma format
+        expo_np: numpy exposure file
+        index_list: shuffled index list
+        sig_list: selected list of signatures
+        cosmic_f: the cosmic file
+    output: 
+    l2 norm 
+    """
+    cosmic_df = pd.read_csv(cosmic_f, sep='\t')
     row_ls = []
     #all_np =  np.load(expo_np, allow_pickle=True)
     expo_np = expo_np / expo_np.sum(axis=1)[:, np.newaxis]
@@ -136,8 +126,8 @@ def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, setting="assignme
             recon_row += now_expo * now_sig
         row_ls.append(recon_row)
     recon_M = np.stack(row_ls)
-    pererr = sub_max(raw_M, recon_M,cutoff,index_list)
-    return pererr
+    l2norm = sub_max(raw_M, recon_M,index_list)
+    return l2norm
 
 if __name__ == "__main__":
     #input: our SBS format
