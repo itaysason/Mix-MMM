@@ -193,6 +193,22 @@ class Mix:
                     clusters[sample] = cluster
                     topics[sample] = curr_topic_counts
         return clusters, topics, probabilites
-
+    
+    def expected_topics(self, data):
+        self.pi = np.log(self.pi)
+        self.w = np.log(self.w)
+        self.e = np.log(self.e)
+        self.set_data(data)
+        expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
+        likelihood_sample_cluster += self.w
+        likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 1, keepdims=True)
+        expected_pi_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis]
+        expected_e_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis, np.newaxis]
+        log_expected_topics = logsumexp(expected_pi_sample_cluster, 0)
+        self.pi = np.exp(self.pi)
+        self.e = np.exp(self.e)
+        self.w = np.exp(self.w)
+        return np.exp(log_expected_topics)
+    
     def get_params(self):
         return {'pi': self.pi.copy(), 'w': self.w.copy(), 'e': self.e.copy()}
