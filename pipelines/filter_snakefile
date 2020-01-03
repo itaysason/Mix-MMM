@@ -1,0 +1,105 @@
+from os.path import join
+from msk_downsize_pipeline import *
+##CONFIG: define your own downsize ratio, the lambda of poisson distribution
+DS_MEAN = 6
+# msk351 or mart
+REF = "mart"
+
+
+##URLs
+MSK_URL="https://ars.els-cdn.com/content/image/1-s2.0-S1525157815000458-mmc4.xlsx"
+##DIRs
+RAW_DIR = "../data/raw"
+PROCESSED_DIR= "../data/processed/downsize"
+##RAW files
+WGS_MAF = join(RAW_DIR, "standard.ICGC-BRCA-EU_BRCA_22.WGS.tsv")
+GENE_F = join(RAW_DIR, "data_gene_panel_impact410.txt") 
+RAW_MSK351=join(RAW_DIR, "msk351_export.xlsx")
+MART_REF = join(RAW_DIR, "mart_export.txt")
+##Processed files
+MART_MSKLOCF = join(PROCESSED_DIR, '%s_msk_gene_loc.txt'%REF)
+SLIM_WGSF = join(PROCESSED_DIR, 'slim_wgs.csv')
+MART_REGION_JS = join(PROCESSED_DIR, 'mart_region_dict.json')
+MSK351_REGION_JS = join(PROCESSED_DIR, 'msk351_region_dict.json')
+CHOSE_REGION_JS = join(PROCESSED_DIR, '%s_region_dict.json'%REF)
+TRAP_MUTF = join(PROCESSED_DIR, '%s_trap_mut.csv'%REF)
+##BRIDGE FILE
+FULL_CNF = "test_sbs96.tsv" 
+##OUTPUT files
+TRAP_MAF = join(PROCESSED_DIR, "%s_trap_maf.csv"%REF)
+DS_CNF = join(PROCESSED_DIR,'brca-downsize%d_ref%s_counts.npy'%(DS_MEAN,REF))
+NAME_F = join(PROCESSED_DIR, "brca-downsize%d_ref%s_sample_id.csv"%(DS_MEAN,REF))
+
+rule all:
+    input:
+        TRAP_MAF
+
+#get locations of 410 genes, some are unavailable, from http://www.ensembl.org/biomart/martview/
+rule get_mart_location:
+    input:
+        GENE_F,
+        MART_REF
+    output:
+        MART_MSKLOCF
+    run:
+        select_msk(GENE_F, MART_REF, MART_MSKLOCF)
+
+#concatenate mutation locations on a single chromsome
+rule combine_mart_region:
+    input:
+        MART_MSKLOCF
+    output:
+        MART_REGION_JS
+    run:
+        merge_by_chrom(MART_MSKLOCF, MART_REGION_JS)
+
+#alternatively, get locations of 410 genes, from the old MSK IMPACT file
+# as there is no gene locations for the new one
+rule download_msk351:
+    output:
+        RAW_MSK351
+    run:
+        shell("wget -O {RAW_MSK351} {MSK_URL}")
+
+rule get_msk351_region:
+    input:
+        RAW_MSK351
+    output:
+        MSK351_REGION_JS
+    run:
+        rawmsk2dict(RAW_MSK351, MSK351_REGION_JS)
+
+rule get_slim_wgs:
+    input:
+        WGS_MAF
+    output:
+        SLIM_WGSF
+    run:
+        slim_wgs(WGS_MAF, SLIM_WGSF)
+
+rule get_trap_wgs:
+    input:
+        CHOSE_REGION_JS,
+        SLIM_WGSF
+    output:
+        TRAP_MUTF
+    run:
+        trap_wgs(CHOSE_REGION_JS, SLIM_WGSF, TRAP_MUTF)
+
+rule get_trap_full_maf:
+    input:
+        TRAP_MUTF,
+        WGS_MAF
+    output:
+        TRAP_MAF
+    run:
+        get_trap_maf(WGS_MAF, TRAP_MAF, TRAP_MUTF)
+
+rule downsize:
+    input:
+        FULL_CNF
+    output:
+        DS_CNF,
+        NAME_F
+    run:
+        downsize(FULL_CNF, DS_CNF, NAME_F, DS_MEAN)

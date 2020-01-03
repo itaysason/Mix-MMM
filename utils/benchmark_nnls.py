@@ -17,7 +17,7 @@ if __name__ == "__main__":
     sig_mat = np.transpose(np.array(sig_mat))
     #print(np.shape(sig_mat))
     ds_ls = [2,5,10]
-    part_ls = [1,2]
+    part_ls = [2]
     for p in part_ls:
         for i in ds_ls:
             expo_mat = []

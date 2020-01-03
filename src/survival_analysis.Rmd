@@ -19,23 +19,29 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r survival}
 library(survminer)
 library(survival)
-
-id_type <- "WXS"
-#id_type <- "MSK"
-#id_type <- "MSK-MSK"
-#data_type <- "assignments"
-data_type <- "exposures"
+ds_ratio <- 5
+id_type <- c(paste0("-OV-ds",ds_ratio),paste0("-OV-ds",ds_ratio))
+#id_type <- c(paste0("-OV-ds",ds_ratio),"-TCGA-OV")
+part_id <- 1
+percent <- 0
+#part1-status-new-OV-ds2-OV-ds2-survival-analysis-assignments-10.tsv
 # Load data
-tcga_ov <- read.csv(paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/sigma-part4-BRCA-wildtype-TCGA-OV-", id_type, "-survival-analysis-",  data_type, ".tsv", sep = ''),sep='\t')
+fname <- paste("/Users/yuexichen/Downloads/lrgr_file/mskfiles/part",part_id,"-status-new",id_type[1],id_type[2],"-survival-analysis-assignments-",percent,".tsv", sep = '')
+#fname <- "/Users/yuexichen/Downloads/lrgr_file/mskfiles/group-status-new-OV-ds5-OV-ds5-survival-analysis-assignments-0.tsv"
+tcga_ov <- read.csv(fname, sep='\t')
 # Specify data type: MSK, WXS or MSK-MSK
-#new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3>0.8)
 # Remove NAs
 # 1 is censored and 2 is dead
 tcga_ov <- tcga_ov[!(tcga_ov$survival_status == 0),]
+#tcga_ov <- tcga_ov[(!tcga_ov$status == "BRCA mutations") ,]
+#new_binary_sig3 <- as.numeric(tcga_ov$exposure_sig3>0.2)
 # Fit survival curves
-fit <- survfit(Surv(survival_days, survival_status) ~ binary_sig3, data = tcga_ov)
+tcga_ov$survival_years <- tcga_ov$survival_days/365
+
+fit <- survfit(Surv(survival_years, survival_status) ~ binary_sig3, data = tcga_ov)
 # Drawing curves
-ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle(paste("Wildtype BRCA1/2: TCGA-OV-", id_type, "-",data_type, sep=''))
+ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle("Kaplan_Meier curve of ovarian cancer patients") + xlab("Year")
+#ggsave("~/Desktop/survivalplot2.pdf")
 ```
 
 ## Including Plots
@@ -43,13 +49,27 @@ ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle(paste("Wildtype BRCA1/2:
 You can also embed plots, for example:
 
 ```{r cox}
-# Transform age to years
-tcga_ov$age_year <- tcga_ov$age_days/365
-fit2 <- coxph(Surv(survival_days, survival_status) ~ age_year +  binary_sig3 + clinical_stage , data=tcga_ov)
+
+#tcga_ov <- tcga_ov[(!tcga_ov$status == "BRCA mutations") ,]
+#tcga_ov <- tcga_ov[(!tcga_ov$status == "na"),]
+age_year <- tcga_ov$age_days/365
+expo_ls <- tcga_ov$exposure_sig3
+expo_ls <- expo_ls[order(expo_ls)]
+threshold <- expo_ls[as.integer(percent/100 * length(expo_ls))]
+threshold <- 0
+tcga_ov$new_bina <- as.numeric(tcga_ov$exposure_sig3>threshold)
+fit2 <- coxph(Surv(survival_days, survival_status) ~ age_year + exposure_sig3  + clinical_stage , data=tcga_ov)
+
 ggforest(fit2, data =tcga_ov)
+#summary(fit2)
+ggsave("~/Desktop/forestplot2.pdf")
 ```
+
 ```{r}
-sum(tcga_ov$binary_sig3)
-sum(tcga_ov$binary_sig3==0)
+# Transform age to years
+# Specify data type: MSK, WXS or MSK-MSK
+sum(tcga_ov$binary_sig3==1)
+#length(tcga_ov$binary_sig3)
+#print(1-sum(tcga_ov$binary_sig3)/length(tcga_ov$binary_sig3))
 ```
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

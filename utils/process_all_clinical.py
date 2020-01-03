@@ -48,17 +48,17 @@ def select_df(msk_dir, all_df_f, id_list_f, select_df_f):
     output:
     dataframes of rows selected by this id list
     """
-    all_df = pd.read_csv(all_df_f, sep='\t')
+    all_df = pd.read_csv(all_df_f, sep=',')
     with open(id_list_f) as in_f:
         id_list = [item.rstrip() for item in in_f.readlines()]
     #enforce the order
     row_ls = []
     for il in id_list:
-        now_row = all_df.loc[all_df['id'] == il]
+        now_row = all_df.loc[all_df['tumor'] == il]
         row_ls.append(now_row)
 
     select_df = pd.concat(row_ls)
-    select_df.to_csv(select_df_f, sep='\t', index=None)
+    select_df.to_csv(select_df_f, sep=',', index=None)
 
 
 def row2df(msk_dir, raw_f, out_csv):

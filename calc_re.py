@@ -43,16 +43,32 @@ def sigma_formatter(in_sbs, out_sbs):
     in_df = in_df[cols]
     in_df.to_csv(out_sbs, sep=',', index=None)
 
-def sub_max(raw_sbs, recon_M, index_list=None):
+def sub_max(raw_sbs, recon_M, index_list=None, sub_mat=None):
+    """
+    index_list: shuffled indices
+    sub_mat: the matrix to subtract before normalization
+    """
     #raw_sbs = pd.read_csv(raw_M,sep=',')
     # remove the last tumor id column
     raw_sbs_M = np.stack([item[:96] for item in raw_sbs.values])
     # normalize
-    sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
     if len(index_list)>0:
         #select those rows
-        sbs_M = sbs_M[index_list,:]
+        raw_sbs_M = raw_sbs_M[index_list,:]
+    #if sub_mat is not None:
+        #smooth
+    #    raw_sbs_M = raw_sbs_M - sub_mat
+    row,col = np.shape(raw_sbs_M)
+    for i in range(row):
+        for j in range(col):
+            if raw_sbs_M[i][j] < sub_mat[i][j]:
+                print("position", i,j)
+                print(raw_sbs_M[i][j])
+                print(sub_mat[i][j])
+    sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
+    #print(sbs_M)
     l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)
+    #l2_norm = 0
     return l2_norm
 
 def comp_re_sigma(raw_M, sigma_out, index_list, cosmic):
@@ -100,10 +116,10 @@ def comp_re_sigma(raw_M, sigma_out, index_list, cosmic):
     #print(pererr)
     return pererr, exp_3
 
-def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f):
+def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f, sub_mat):
     """
     input: 
-        raw M: raw sbs file, sigma format
+        raw M: raw sbs, sigma format
         expo_np: numpy exposure file
         index_list: shuffled index list
         sig_list: selected list of signatures
@@ -126,7 +142,7 @@ def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f):
             recon_row += now_expo * now_sig
         row_ls.append(recon_row)
     recon_M = np.stack(row_ls)
-    l2norm = sub_max(raw_M, recon_M,index_list)
+    l2norm = sub_max(raw_M, recon_M,index_list, sub_mat)
     return l2norm
 
 if __name__ == "__main__":
