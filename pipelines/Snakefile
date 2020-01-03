@@ -4,8 +4,8 @@ from msk_downsize_pipeline import *
 DS_MEAN = 6
 
 ##DIRs
-RAW_DIR = "../data/raw"
-PROCESSED_DIR= "../data/processed/downsize"
+RAW_DIR = "../data/"
+PROCESSED_DIR= "../data/downsize"
 ##Count files
 BRCA_FULL_CNF = join(RAW_DIR, "counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv") 
 OV_FULL_CNF = join(RAW_DIR, "counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv")
