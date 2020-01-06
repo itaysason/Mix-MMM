@@ -57,10 +57,10 @@ def npy2our(npyf, cosmicf,ourf):
 
 
 if __name__ == "__main__":
-    msk_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles"
-    cancer ="ov"
+    msk_dir = "/Users/yuexichen/Desktop/lrgr_file/mskfiles/jan_downsize"
     cosmicf =join(msk_dir, "cosmic-signatures.tsv")
-    #npyf= join(msk_dir,"%s-all_counts.npy"%cancer)
+    """
+    cancer ="ov"
     ds_list = [2,5,10]
     p_list = [1,2]
     for dl in ds_list:
@@ -77,9 +77,14 @@ if __name__ == "__main__":
     
     #setting = ["clustered-nmf", "mix", "nmf"]
     """
-    setting = ["OV-ds2","TCGA-OV"]
-    for m in setting:
-        ourf = join(msk_dir,"mix_signatures/%s_signature.tsv"%m)
-        npyf = join(msk_dir,"mix_signatures/%s_signatures.npy"%m)
-        npy2our(npyf, cosmicf, ourf)
-    """
+    cancer = ["ov", "brca"]
+    ds_ratio = ['003','006','009','012','015']
+    for cc in cancer:
+        for ds in ds_ratio:
+            npyf = join(msk_dir, "%s-downsize%s_counts.npy"%(cc, ds))
+            idf = join(msk_dir, "%s-downsize%s_sample_id.csv"%(cc, ds))
+            sigmaf = join(msk_dir, "sigma-%s-downsize%s.tsv"%(cc, ds))
+            npy2sigma(npyf, idf, cosmicf,sigmaf) 
+
+    
+    

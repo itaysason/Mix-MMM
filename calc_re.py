@@ -43,21 +43,15 @@ def sigma_formatter(in_sbs, out_sbs):
     in_df = in_df[cols]
     in_df.to_csv(out_sbs, sep=',', index=None)
 
-def sub_max(raw_sbs, recon_M, index_list=None, sub_mat=None):
+def sub_max(raw_sbs, recon_M):
     """
-    index_list: shuffled indices
-    sub_mat: the matrix to subtract before normalization
+    
     """
-    #raw_sbs = pd.read_csv(raw_M,sep=',')
+    raw_sbs = pd.read_csv(raw_M,sep=',')
     # remove the last tumor id column
     raw_sbs_M = np.stack([item[:96] for item in raw_sbs.values])
-    # normalize
-    if len(index_list)>0:
-        #select those rows
-        raw_sbs_M = raw_sbs_M[index_list,:]
-    #if sub_mat is not None:
-        #smooth
-    #    raw_sbs_M = raw_sbs_M - sub_mat
+    # debug  
+    """
     row,col = np.shape(raw_sbs_M)
     for i in range(row):
         for j in range(col):
@@ -65,13 +59,14 @@ def sub_max(raw_sbs, recon_M, index_list=None, sub_mat=None):
                 print("position", i,j)
                 print(raw_sbs_M[i][j])
                 print(sub_mat[i][j])
+    """
     sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
     #print(sbs_M)
-    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)
+    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)/ np.shape(sbs_M)[0]
     #l2_norm = 0
     return l2_norm
 
-def comp_re_sigma(raw_M, sigma_out, index_list, cosmic):
+def comp_re_sigma(raw_M, sigma_out, cosmic):
     """
     compute reconstruction error
     input: the SigMA output file
@@ -112,8 +107,8 @@ def comp_re_sigma(raw_M, sigma_out, index_list, cosmic):
             if int(sig_num[i][j]) == 3:
                 exp_3[i] = float_exp[i][j]
         row_ls.append(recon_row)
-    pererr = sub_max(raw_M, np.stack(row_ls), index_list)
-    #print(pererr)
+    pererr = sub_max(raw_M, np.stack(row_ls))
+    print(pererr)
     return pererr, exp_3
 
 def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f, sub_mat):
@@ -131,7 +126,6 @@ def comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic_f, sub_mat):
     row_ls = []
     #all_np =  np.load(expo_np, allow_pickle=True)
     expo_np = expo_np / expo_np.sum(axis=1)[:, np.newaxis]
-
     for i in range(np.shape(expo_np)[0]):
         recon_row = [0]*96
         for j in range(len(sig_list)):
@@ -149,7 +143,7 @@ if __name__ == "__main__":
     #input: our SBS format
     #output: SigMA SBS format
     #difference: the header line names, the sep, and the position of tumor id
-    msk_dir = "/Users/yuexichen/Downloads/lrgr_file/mskfiles"
+    msk_dir = "/Users/yuexichen/Desktop/lrgr_file/mskfiles/jan_downsize"
     cosmic = join(msk_dir, "cosmic-signatures.tsv")
     # original WGS
     # in_sbs = join(msk_dir, "wgs-brca-sbs.tsv")
@@ -177,32 +171,25 @@ if __name__ == "__main__":
     #out_sbs = join(msk_dir, "sigma-wxs-ov-msk-sbs.tsv")
     
     # cancer type: ov or brca
-    """
+    
     print("Now is sigma")
     cancer_type ="ov"
-    if cancer_type == "brca":
+    ds_list = ["003","006","009","012","015"]
+    #if cancer_type == "brca":
         #ds_list = ["","-d10","-d100"]
-        ds_list = ['all','downsize100','downsize250','downsize500']
-    elif cancer_type == "ov":
+    #    ds_list = ['all','downsize100','downsize250','downsize500']
+    #elif cancer_type == "ov":
         #ds_list = ["", "-msk"]
-        ds_list = ['all','downsize2','downsize5','downsize10']
+    #    ds_list = ['all','downsize2','downsize5','downsize10']
 
     for dl in ds_list:
-        if cancer_type == "brca":
             #out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
-            out_sbs = join(msk_dir, "brca-%s_sigma_sbs.tsv"%dl)
+            raw_M = join(msk_dir, "sigma-%s-downsize%s.tsv"%(cancer_type, dl))
             #sigma_out = join(msk_dir, "sigma-wxs-ov-msk-sbs-out.tsv")
-            sigma_out = join(msk_dir,"out-brca-%s_sigma_sbs.tsv"%dl)
+            sigma_out = join(msk_dir,"out-sigma-%s-downsize%s.tsv"%(cancer_type, dl))
             # sigma_formatter(in_sbs, out_sbs)
-        elif cancer_type == "ov":
-            #out_sbs = join(msk_dir, "sigma-wxs-ov%s-sbs.tsv"%dl)
-            out_sbs = join(msk_dir, "ov-%s_sigma_sbs.tsv"%dl)
-            #sigma_out = join(msk_dir, "t0-sigma-wxs-ov%s-sbs-out.tsv"%dl)
-            sigma_out = join(msk_dir,"out-ov-%s_sigma_sbs.tsv"%dl)
-        raw_M = out_sbs
-        cutoff = 0
-        print("Cancer type: %s"%cancer_type, dl)
-        comp_re_sigma(raw_M, sigma_out, out_sbs, cosmic, cutoff,upper=None)
+            print("Cancer type: %s"%cancer_type, dl)
+            comp_re_sigma(raw_M, sigma_out, cosmic)
     
 
     """
@@ -243,3 +230,4 @@ if __name__ == "__main__":
             #print(index_list)
             pererr, exp_3 = comp_re_ours(raw_M, expo_np, index_list, sig_list, cosmic, st, cutoff)
             np.save(join(msk_dir, "mix_downsize/sigma_downsize%d_sig3.npy"%dl), exp_3, allow_pickle=True)
+    """

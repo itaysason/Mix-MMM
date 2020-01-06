@@ -153,7 +153,8 @@ def downsize(full_cnf, ds_cnf, id_f, ds_mean, seed=1234):
     ds_cnf: downsampled 96-mutation numpy file
     id_f: associated sample id
     """
-    random.seed(seed)
+    #random.seed(seed)
+    np.random.seed(seed)
     mut_pd = pd.read_csv(full_cnf, sep='\t')
     mut_val = mut_pd.values[:,1:]
     patient_num = np.shape(mut_val)[0]
