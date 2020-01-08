@@ -112,9 +112,9 @@ def get_data(dataset, threshold=100):
                 loaded_onco.append(oc)
                 onco_num_mutations.append(tmp_data.sum())
         data = np.vstack(tmp_data_ls)
-        # print("Successfully loaded %d samples from %d datasets: %s" % (np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
+        print("Successfully loaded %d samples from %d datasets: %s" % (np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
-        # print("Here are activate signatures", active_signatures)
+        print("Here are activate signatures", active_signatures)
     elif dataset == 'clustered-MSK-ALL':
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
@@ -128,84 +128,29 @@ def get_data(dataset, threshold=100):
                 tmp_data_ls.append(tmp_data.sum(0, keepdims=True))
                 loaded_onco.append(oc)
         data = np.vstack(tmp_data_ls)
-        # print("Successfully loaded %d samples from %d datasets: %s" % (
-        #     np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
-        # print("Here are activate signatures", active_signatures)
     elif dataset == 'TCGA-OV':
-        data = np.load('data/WXS-TCGA-OV/wxs-ov-all_counts.npy').astype('float')
+        data = np.load('data/OV_counts.npy').astype('float')
         active_signatures = [1, 3, 5]
-    elif dataset == 'BRCA-ds100':
-        data = np.load('data/brca_downsize/brca-downsize100_counts.npy').astype('float')
+    elif 'BRCA' in dataset and 'ds' in dataset and 'part' in dataset:
+        ds_size = dataset.split('-')[1][2:]
+        part = dataset[-1]
+        data = np.load('data/downsize/brca-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'BRCA-ds250':
-        data = np.load('data/brca_downsize/brca-downsize250_counts.npy').astype('float')
-        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'BRCA-ds500':
-        data = np.load('data/brca_downsize/brca-downsize500_counts.npy').astype('float')
-        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
-    elif dataset == 'OV-ds2':
-        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds5':
-        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds10':
-        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds2-part1':
-        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
+    elif 'OV' in dataset and 'ds' in dataset and 'part' in dataset:
+        ds_size = dataset.split('-')[1][2:]
+        part = dataset[-1]
+        data = np.load('data/downsize/ov-downsize{}_counts.npy'.format(ds_size.zfill(3)))
         num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[:num_samples // 2]]
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds5-part1':
-        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
-        num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[:num_samples // 2]]
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds10-part1':
-        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
-        num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[:num_samples // 2]]
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds2-part2':
-        data = np.load('data/ov_downsize/ov-downsize2_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
-        num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[num_samples // 2:]]
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds5-part2':
-        data = np.load('data/ov_downsize/ov-downsize5_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
-        num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[num_samples // 2:]]
-        active_signatures = [1, 3, 5]
-    elif dataset == 'OV-ds10-part2':
-        data = np.load('data/ov_downsize/ov-downsize10_counts.npy')
-        shuffle_seed = 10033
-        np.random.seed(shuffle_seed)
-        num_samples = len(data)
-        indices = np.arange(num_samples)
-        np.random.shuffle(indices)
-        data = data[indices[num_samples // 2:]]
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
         active_signatures = [1, 3, 5]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
