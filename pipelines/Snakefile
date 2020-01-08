@@ -2,6 +2,7 @@ from os.path import join
 from msk_downsize_pipeline import *
 ##CONFIG: define your own downsize ratio, the lambda of poisson distribution
 DS_MEAN = 6
+DS_MEAN_STR = str(DS_MEAN).zfill(3)
 
 ##DIRs
 RAW_DIR = "../data/"
@@ -10,10 +11,10 @@ PROCESSED_DIR= "../data/downsize"
 BRCA_FULL_CNF = join(RAW_DIR, "counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv") 
 OV_FULL_CNF = join(RAW_DIR, "counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv")
 ##OUTPUT files
-BRCA_DS_CNF = join(PROCESSED_DIR,'brca-downsize%d_counts.npy'%(DS_MEAN))
-BRCA_IDF = join(PROCESSED_DIR, "brca-downsize%d_sample_id.csv"%(DS_MEAN))
-OV_DS_CNF=join(PROCESSED_DIR,'ov-downsize%d_counts.npy'%(DS_MEAN))
-OV_IDF=join(PROCESSED_DIR,'ov-downsize%d_sample_id.csv'%(DS_MEAN))
+BRCA_DS_CNF = join(PROCESSED_DIR,'brca-downsize%s_counts.npy'%(DS_MEAN_STR))
+BRCA_IDF = join(PROCESSED_DIR, "brca-downsize%s_sample_id.csv"%(DS_MEAN_STR))
+OV_DS_CNF=join(PROCESSED_DIR,'ov-downsize%s_counts.npy'%(DS_MEAN_STR))
+OV_IDF=join(PROCESSED_DIR,'ov-downsize%s_sample_id.csv'%(DS_MEAN_STR))
 
 rule brca_downsize:
     input:
