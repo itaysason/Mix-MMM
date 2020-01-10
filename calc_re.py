@@ -60,9 +60,11 @@ def sub_max(raw_sbs, recon_M):
                 print(raw_sbs_M[i][j])
                 print(sub_mat[i][j])
     """
+    #normalize both
+    recon_M = recon_M / recon_M.sum(axis=1)[:, np.newaxis]
     sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
     #print(sbs_M)
-    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=2)/ np.shape(sbs_M)[0]
+    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=1)/ np.shape(sbs_M)[0]
     #l2_norm = 0
     return l2_norm
 
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     #input: our SBS format
     #output: SigMA SBS format
     #difference: the header line names, the sep, and the position of tumor id
-    msk_dir = "/Users/yuexichen/Desktop/lrgr_file/mskfiles/jan_downsize"
+    msk_dir = "sparse/"
     cosmic = join(msk_dir, "cosmic-signatures.tsv")
     # original WGS
     # in_sbs = join(msk_dir, "wgs-brca-sbs.tsv")
@@ -174,7 +176,7 @@ if __name__ == "__main__":
     
     print("Now is sigma")
     cancer_type ="ov"
-    ds_list = ["003","006","009","012","015"]
+    ds_list = ["003","006","009","012","015","018","021","024","027"]
     #if cancer_type == "brca":
         #ds_list = ["","-d10","-d100"]
     #    ds_list = ['all','downsize100','downsize250','downsize500']
