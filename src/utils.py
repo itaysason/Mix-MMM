@@ -101,6 +101,7 @@ def get_data(dataset, threshold=100):
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
         loaded_onco = []
+        onco_num_mutations = []
         for oc in oncocode:
             dat_f = "data/processed/%s_counts.npy" % oc
             if not os.path.isfile(dat_f):
@@ -109,13 +110,51 @@ def get_data(dataset, threshold=100):
                 tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
                 tmp_data_ls.append(tmp_data)
                 loaded_onco.append(oc)
+                onco_num_mutations.append(tmp_data.sum())
         data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (
-            np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
+        print("Successfully loaded %d samples from %d datasets: %s" % (np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
         print("Here are activate signatures", active_signatures)
+    elif dataset == 'clustered-MSK-ALL':
+        oncocode = get_oncocode(threshold)
+        tmp_data_ls = []
+        loaded_onco = []
+        for oc in oncocode:
+            dat_f = "data/processed/%s_counts.npy" % oc
+            if not os.path.isfile(dat_f):
+                Warning('%s is not loaded: file does not exist!' % dat_f)
+            else:
+                tmp_data = np.array(np.load(dat_f, allow_pickle=True), dtype=np.float64)
+                tmp_data_ls.append(tmp_data.sum(0, keepdims=True))
+                loaded_onco.append(oc)
+        data = np.vstack(tmp_data_ls)
+        active_signatures = get_active_sig(loaded_onco)
+    elif dataset == 'TCGA-OV':
+        data = np.load('data/OV_counts.npy').astype('float')
+        active_signatures = [1, 3, 5]
+    elif 'BRCA' in dataset and 'ds' in dataset and 'part' in dataset:
+        ds_size = dataset.split('-')[1][2:]
+        part = dataset[-1]
+        data = np.load('data/downsize/brca-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif 'OV' in dataset and 'ds' in dataset and 'part' in dataset:
+        ds_size = dataset.split('-')[1][2:]
+        part = dataset[-1]
+        data = np.load('data/downsize/ov-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 3, 5]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
+
     active_signatures = np.array(active_signatures) - 1
     return data, active_signatures
 
