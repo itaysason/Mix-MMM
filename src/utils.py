@@ -152,6 +152,54 @@ def get_data(dataset, threshold=100):
         elif part == '2':
             data = data[num_samples // 2:]
         active_signatures = [1, 3, 5]
+    elif 'BRCA' in dataset and 'panel' in dataset and 'full' not in dataset:
+        part = dataset[-1]
+        all_df = pd.read_csv("data/panel_downsize/filter-BRCA-WGS_counts.tsv", sep='\t')
+        data = np.array(all_df)[:, 1:].astype('float')
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif 'BRCA' in dataset and 'panel' in dataset and 'full' in dataset:
+        part = dataset[-1]
+        all_df = pd.read_csv("data/counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv", sep='\t')
+        filtered_df = pd.read_csv("data/panel_downsize/filter-BRCA-WGS_counts.tsv", sep='\t')
+        filtered_samples = np.array(filtered_df)[:, 0].astype('str')
+        all_samples = np.array(filtered_df)[:, 0].astype('str')
+        indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
+        data = np.array(all_df)[indices, 1:].astype('float')
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif 'OV' in dataset and 'panel' in dataset and 'full' not in dataset:
+        part = dataset[-1]
+        all_df = pd.read_csv("data/panel_downsize/filter-OV-WXS_counts.tsv", sep='\t')
+        data = np.array(all_df)[:, 1:].astype('float')
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 3, 5]
+    elif 'OV' in dataset and 'panel' in dataset and 'full' in dataset:
+        part = dataset[-1]
+        all_df = pd.read_csv("data/counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv", sep='\t')
+        filtered_df = pd.read_csv("data/panel_downsize/filter-OV-WXS_counts.tsv", sep='\t')
+        filtered_samples = np.array(filtered_df)[:, 0].astype('str')
+        all_samples = np.array(filtered_df)[:, 0].astype('str')
+        indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
+        data = np.array(all_df)[indices, 1:].astype('float')
+        num_samples = len(data)
+        if part == '1':
+            data = data[:num_samples // 2]
+        elif part == '2':
+            data = data[num_samples // 2:]
+        active_signatures = [1, 3, 5]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
 
