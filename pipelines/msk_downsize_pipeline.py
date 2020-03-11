@@ -22,18 +22,20 @@ def select_msk(gene_f, ref_f, msk_locf):
     msk_loc = gloc_df[gloc_df['HGNC symbol'].isin(gene_ls)]
     msk_loc.to_csv(msk_locf, sep='\t', index=None)
 
-def merge_by_chrom(msk_locf, region_js):
+def merge_by_chrom(msk_locf, region_js, col1,col2,col3):
     """
     Ignore gene names but merge regions by chromosomes,
     INPUT:
     msk_locf: genes with their chromosome regions
     OUTPUT:
     region_js: chromosome with regions
+    PARAMS:
+    column names, col1, 2, 3
     """
     msk_df = pd.read_csv(msk_locf, sep='\t')
-    chrom_name = list(msk_df['Chromosome/scaffold name'])
-    start_bp = list(msk_df['Gene start (bp)'])
-    end_bp = list(msk_df['Gene end (bp)'])
+    chrom_name = list(msk_df[col1])
+    start_bp = list(msk_df[col2])
+    end_bp = list(msk_df[col3])
     region_dict = dict()
     for i in range(len(chrom_name)):
         if chrom_name[i].isdigit() or chrom_name[i] == 'X':
