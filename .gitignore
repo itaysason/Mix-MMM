@@ -1,3 +1,6 @@
+.Rhistory
+data/panel_downsize/
+*.DS_Store
 experiments/
 data/processed/
 data/raw/

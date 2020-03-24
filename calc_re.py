@@ -194,7 +194,7 @@ if __name__ == "__main__":
             #out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
             raw_M = join(msk_dir, "sigma-%s-panel-full.tsv"%(ct))
             #sigma_out = join(msk_dir, "sigma-wxs-ov-msk-sbs-out.tsv")
-            sigma_out = join(msk_dir,"out-sigma-%s-panel-all.tsv"%(ct))
+            sigma_out = join(msk_dir,"out-sigma-%s-panel-full.tsv"%(ct))
             # sigma_formatter(in_sbs, out_sbs)
             print("Cancer type: %s"%ct)
             comp_re_sigma(raw_M, sigma_out, cosmic)
