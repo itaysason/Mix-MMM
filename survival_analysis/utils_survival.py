@@ -76,7 +76,14 @@ def main(args):
     comb_df['stage']=stage_ls
     comb_df['survival_days'] = surv_ls
     comb_df['survival_status'] = stat_ls
-    comb_df['group'] = group_ls
+    comb_df['group_detail']=group_ls
+    bina_group=[]
+    for gl in group_ls:
+        if (gl == "rest"):
+            bina_group.append(0)
+        else:
+            bina_group.append(1)
+    comb_df['brcaness'] = bina_group
     #print(comb_df)
 
     comb_df.to_csv(args.skeleton_df, sep='\t', index=None)

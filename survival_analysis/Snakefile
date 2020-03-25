@@ -1,19 +1,33 @@
 from os.path import join
 
+##CONFIGS
+THRESHOLD=0.1
+
 ##DIRS
 RAW_DIR='raw'
 PRO_DIR='processed'
+MIX_DIR=join(RAW_DIR, 'ov_exposure')
 DRUG_DIR = join(RAW_DIR, 'gdac.broadinstitute.org_OV.Merge_Clinical.Level_1.2016012800.0.0')
+SURV_DIR=join(PRO_DIR, 'thre%s_survival_df'%THRESHOLD)
+
 
 ##SRC
 SURV_SRC='utils_survival.py'
+ADD_SRC='add_sig3.py'
 
 ##FILES
+OV_IDF=join(RAW_DIR, 'filter-OV-WXS_counts.tsv')
 DRUG_LABEL=join(DRUG_DIR,'OV.clin.merged.txt')
 BRCA_LABEL=join(RAW_DIR,'Ovary_OS_KM_matrix.txt')
 AGE_LABEL=join(RAW_DIR,'age_label.txt')
 # skeleton is deterministic
 SKL_DF=join(PRO_DIR, 'skeleton_df.tsv')
+
+## files for survival analysis
+ASSN_F=join(SURV_DIR, 'assignment_surv.tsv')
+EXP_F=join(SURV_DIR, 'expected_exposure_surv.tsv')
+HARD_F=join(SURV_DIR, 'hard_cluster_exposure_surv.tsv')
+SOFT_F=join(SURV_DIR, 'soft_cluster_exposure_surv.tsv')
 
 
 ##URLS
@@ -22,6 +36,31 @@ DRUG_URL="http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/OV/201601
 BRCA_URL='https://raw.githubusercontent.com/riazn/biallelic_hr/master/Supplementary_Files/Ovary_OS_KM_matrix.txt'
 DRUG_TAR=join(RAW_DIR, 'ov_clinical.tar.gz')
 DRUG_TAR_NAME="ov_clinical.tar.gz"
+
+
+rule all:
+	input:
+		ASSN_F,
+		EXP_F,
+		HARD_F,
+		SOFT_F
+
+rule add_sig:
+	input:
+		oif=OV_IDF,
+		md=MIX_DIR,
+		sd=SKL_DF
+	params:
+		thre=THRESHOLD,
+		sud=SURV_DIR
+	output:
+		ASSN_F,
+		EXP_F,
+		HARD_F,
+		SOFT_F
+	shell:
+		"python {ADD_SRC} -oif {input.oif} -md {input.md} -sd {input.sd} -sud {params.sud} -thre {params.thre}"
+
 
 
 #everything except exposures of signature 3
