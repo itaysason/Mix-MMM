@@ -1,0 +1,36 @@
+from os.path import join
+
+##DIRS
+RAW_DIR='raw'
+PRO_DIR='processed'
+DRUG_DIR = join(RAW_DIR, 'gdac.broadinstitute.org_OV.Merge_Clinical.Level_1.2016012800.0.0')
+
+##SRC
+SURV_SRC='utils_survival.py'
+
+##FILES
+DRUG_LABEL=join(DRUG_DIR,'OV.clin.merged.txt')
+BRCA_LABEL=join(RAW_DIR,'Ovary_OS_KM_matrix.txt')
+
+
+##URLS
+DRUG_URL="http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/OV/20160128/gdac.broadinstitute.org_OV.Merge_Clinical.Level_1.2016012800.0.0.tar.gz"
+BRCA_URL='https://raw.githubusercontent.com/riazn/biallelic_hr/master/Supplementary_Files/Ovary_OS_KM_matrix.txt'
+DRUG_TAR=join(RAW_DIR, 'ov_clinical.tar.gz')
+DRUG_TAR_NAME="ov_clinical.tar.gz"
+
+
+
+
+
+rule download:
+	output:
+		DRUG_LABEL,
+		BRCA_LABEL
+	shell:
+		'''
+		wget -O {BRCA_LABEL} {BRCA_URL} && \
+		wget -O {DRUG_TAR} {DRUG_URL} && \
+		cd {RAW_DIR} && \
+		tar -xvf {DRUG_TAR_NAME}
+		'''
