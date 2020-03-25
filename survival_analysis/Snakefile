@@ -11,24 +11,39 @@ SURV_SRC='utils_survival.py'
 ##FILES
 DRUG_LABEL=join(DRUG_DIR,'OV.clin.merged.txt')
 BRCA_LABEL=join(RAW_DIR,'Ovary_OS_KM_matrix.txt')
+AGE_LABEL=join(RAW_DIR,'age_label.txt')
+# skeleton is deterministic
+SKL_DF=join(PRO_DIR, 'skeleton_df.tsv')
 
 
 ##URLS
+AGE_URL='https://raw.githubusercontent.com/riazn/biallelic_hr/master/Supplementary_Files/ovary.csv'
 DRUG_URL="http://gdac.broadinstitute.org/runs/stddata__2016_01_28/data/OV/20160128/gdac.broadinstitute.org_OV.Merge_Clinical.Level_1.2016012800.0.0.tar.gz"
 BRCA_URL='https://raw.githubusercontent.com/riazn/biallelic_hr/master/Supplementary_Files/Ovary_OS_KM_matrix.txt'
 DRUG_TAR=join(RAW_DIR, 'ov_clinical.tar.gz')
 DRUG_TAR_NAME="ov_clinical.tar.gz"
 
 
-
-
+#everything except exposures of signature 3
+rule skeleton:
+	input:
+		dl=DRUG_LABEL,
+		bl=BRCA_LABEL,
+		al=AGE_LABEL
+	output:
+		sd=SKL_DF
+	shell:
+		"python {SURV_SRC} -dl {input.dl} -bl {input.bl} -al {input.al} -sd {output.sd}"
+	
 
 rule download:
 	output:
 		DRUG_LABEL,
-		BRCA_LABEL
+		BRCA_LABEL,
+		AGE_LABEL
 	shell:
 		'''
+		wget -O {AGE_LABEL} {AGE_URL} && \
 		wget -O {BRCA_LABEL} {BRCA_URL} && \
 		wget -O {DRUG_TAR} {DRUG_URL} && \
 		cd {RAW_DIR} && \

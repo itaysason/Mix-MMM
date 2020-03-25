@@ -1,3 +1,5 @@
+survival_analysis/raw/
+survival_analysis/processed/
 .Rhistory
 data/panel_downsize/
 *.DS_Store
