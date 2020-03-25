@@ -1,7 +1,7 @@
 from os.path import join
 
 ##CONFIGS
-THRESHOLD=0.1
+THRESHOLD=0.7
 
 ##DIRS
 RAW_DIR='raw'

@@ -32,13 +32,22 @@ def main(args):
         bina_exp3=[]
         for ex in exp_3:
             if ex < float(args.threshold):
-                bina_exp3.append('Sig3-')
+                bina_exp3.append(0)
             else:
-                bina_exp3.append('Sig3+')
-        exp_dict=dict(zip(ov_id,bina_exp3))
+                bina_exp3.append(1)
+        exp_dict=dict(zip(common_id, bina_exp3))
+        brca_dict=dict(zip(common_id, list(common_df['brcaness'])))
         now_bina=[]
         for ci in common_id:
-            now_bina.append(exp_dict[ci])
+            exp3_stat=exp_dict[ci]
+            brca_stat=brca_dict[ci]
+            if brca_stat==1:
+                now_bina.append('BRCAness')
+            else:
+                if exp3_stat==1:
+                    now_bina.append('Sig3+')
+                else:
+                    now_bina.append('Sig3-')
         common_df['exp3']=now_bina
         surv_f=join(args.surv_dir, ep+'_surv.tsv')
         common_df.to_csv(surv_f, sep='\t')
