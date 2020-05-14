@@ -50,6 +50,11 @@ class Mix:
     def set_data(self, data):
         self.data = data
         self.log_data = np.log(data)
+        if self.num_words is None:
+            self.num_words = data.shape[1]
+        else:
+            if self.num_words != data.shape[1]:
+                raise ValueError('data and the given topics shapes, {}, {}, do not match', data.shape, self.e.shape)
 
     def pre_expectation_step(self):
         num_samples = self.data.shape[0]
@@ -109,7 +114,40 @@ class Mix:
         """
         if self.e is None:
             raise ValueError('e was not set, can not refit')
-        return self._fit(data, ['w', 'pi'])
+
+        self.set_data(data)
+        mutation_prob = np.dot(self.pi, self.e)[0]
+        A = self.data.sum(0)
+        zero_prob_mutations = np.where(mutation_prob == 0)[0]
+        zero_occurrences_mutations = np.where(A == 0)[0]
+        if len(zero_prob_mutations) > 0:
+            # If we find a mutation with prob 0 that exists in te data we cannot refit.
+            for i in zero_prob_mutations:
+                if i not in zero_occurrences_mutations:
+                    raise ValueError('Mutation number {} exists in the data, but has probability 0'.format(i))
+
+        # Otherwise all existing mutations has prob > 0, to avoid any problem we remove 0 prob mutations
+        good_indices = np.where(mutation_prob != 0)[0]
+        real_m = self.m
+        if len(good_indices) < self.m:
+            self.m = len(good_indices)
+            self.data = self.data[:, good_indices]
+            self.log_data = self.log_data[:, good_indices]
+            self.e = self.e[:, good_indices]
+            self.e /= self.e.sum(1, keepdims=True)
+
+        # Run refiting
+        output = self._fit(['w', 'pi'])
+
+        # Fix signatures back
+        if self.m < real_m:
+            self.m = real_m
+            self.set_data(data)
+            e = np.zeros((self.num_topics, self.num_words))
+            e[:, good_indices] = self.e
+            self.e = e
+
+        return output
 
     def fit(self, data):
         """
@@ -117,15 +155,30 @@ class Mix:
         :param data:
         :return:
         """
-        return self._fit(data, ['w', 'pi', 'e'])
-
-    def _fit(self, data, params):
         self.set_data(data)
-        if self.num_words is None:
-            self.num_words = data.shape[1]
-        else:
-            if self.num_words != data.shape[1]:
-                raise ValueError('data and the given topics shapes, {}, {}, do not match', data.shape, self.e.shape)
+        # When learning denovo, and there are mutations that are not in the catalog we remove them when training
+        good_indices = np.where(self.data.sum(0) != 0)[0]
+        real_m = self.m
+        if len(good_indices) < self.m:
+            self.m = len(good_indices)
+            self.data = self.data[:, good_indices]
+            self.log_data = self.log_data[:, good_indices]
+            self.e = self.e[:, good_indices]
+            self.e /= self.e.sum(1, keepdims=True)
+
+        # Run fit
+        output = self._fit(['w', 'pi', 'e'])
+
+        # Fix signatures back
+        if self.m < real_m:
+            self.m = real_m
+            self.set_data(data)
+            e = np.zeros((self.num_topics, self.num_words))
+            e[:, good_indices] = self.e
+            self.e = e
+        return output
+
+    def _fit(self, params):
         if self.e is None:
             self.e = np.random.dirichlet([0.5] * self.num_words, self.num_topics)
         if self.pi is None:
@@ -140,7 +193,7 @@ class Mix:
         expected_w, log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step()
         log_likelihood = prev_log_likelihood
         for iteration in range(self.max_iter):
-            print(log_likelihood)
+            print(iteration, log_likelihood)
             # maximization step
             self.w, self.pi, self.e = self.maximization_step(expected_w, log_expected_pi, log_expected_e, params)
 
