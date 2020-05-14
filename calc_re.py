@@ -49,7 +49,7 @@ def sub_max(raw_sbs, recon_M):
     """
     raw_sbs = pd.read_csv(raw_M,sep=',')
     # remove the last tumor id column
-    raw_sbs_M = np.stack([item[:96] for item in raw_sbs.values])
+    raw_sbs_M = raw_sbs.values[:,:-1]
     # debug  
     """
     row,col = np.shape(raw_sbs_M)
@@ -61,12 +61,14 @@ def sub_max(raw_sbs, recon_M):
                 print(sub_mat[i][j])
     """
     #normalize both
+    print("raw sbs")
+    print(np.sum(raw_sbs_M))
     recon_M = recon_M / recon_M.sum(axis=1)[:, np.newaxis]
     sbs_M = raw_sbs_M / raw_sbs_M.sum(axis=1)[:, np.newaxis]
-    #print(sbs_M)
-    l2_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=1)/ np.shape(sbs_M)[0]
-    #l2_norm = 0
-    return l2_norm
+    print(sbs_M)
+    #now_norm = np.linalg.norm(np.matrix(recon_M - sbs_M, dtype=float), ord=1)
+    now_norm = np.sum(np.abs(recon_M - sbs_M))/np.shape(sbs_M)[0]
+    return now_norm
 
 def comp_re_sigma(raw_M, sigma_out, cosmic):
     """
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     #input: our SBS format
     #output: SigMA SBS format
     #difference: the header line names, the sep, and the position of tumor id
-    msk_dir = "sparse/"
+    msk_dir = "/Users/yuexichen/Desktop/lrgr_file/mskfiles/jan_downsize/sparse/"
     cosmic = join(msk_dir, "cosmic-signatures.tsv")
     # original WGS
     # in_sbs = join(msk_dir, "wgs-brca-sbs.tsv")
@@ -175,8 +177,8 @@ if __name__ == "__main__":
     # cancer type: ov or brca
     
     print("Now is sigma")
-    cancer_type ="ov"
-    ds_list = ["003","006","009","012","015","018","021","024","027"]
+    cancer_type =["BRCA", "OV"]
+    #ds_list = ["003","006","009","012","015","018","021","024","027"]
     #if cancer_type == "brca":
         #ds_list = ["","-d10","-d100"]
     #    ds_list = ['all','downsize100','downsize250','downsize500']
@@ -184,13 +186,17 @@ if __name__ == "__main__":
         #ds_list = ["", "-msk"]
     #    ds_list = ['all','downsize2','downsize5','downsize10']
 
-    for dl in ds_list:
+    for ct in cancer_type:
+            if ct=='BRCA':
+                platform='WGS'
+            elif ct=='OV':
+                platform='WXS'
             #out_sbs = join(msk_dir, "sigma-wgs-brca%s-sbs.tsv"%dl)
-            raw_M = join(msk_dir, "sigma-%s-downsize%s.tsv"%(cancer_type, dl))
+            raw_M = join(msk_dir, "sigma-%s-panel-full.tsv"%(ct))
             #sigma_out = join(msk_dir, "sigma-wxs-ov-msk-sbs-out.tsv")
-            sigma_out = join(msk_dir,"out-sigma-%s-downsize%s.tsv"%(cancer_type, dl))
+            sigma_out = join(msk_dir,"out-sigma-%s-panel-full.tsv"%(ct))
             # sigma_formatter(in_sbs, out_sbs)
-            print("Cancer type: %s"%cancer_type, dl)
+            print("Cancer type: %s"%ct)
             comp_re_sigma(raw_M, sigma_out, cosmic)
     
 

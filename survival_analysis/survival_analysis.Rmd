@@ -1,0 +1,46 @@
+---
+title: "survival_analysis"
+author: "Yuexi (Tracy) Chen"
+date: "03/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r survival}
+library(survminer)
+library(survival)
+threshold <- "0.3"
+# exposure type: 'assignment_surv', 'expected_exposure_surv', 'hard_cluster_exposure_surv', 'soft_cluster_exposure_surv'
+expo_type <-'expected_exposure_surv'
+# load data
+fname <- paste("processed/thre",threshold,"_survival_df/",expo_type,".tsv", sep = '')
+tcga_ov <- read.csv(fname, sep='\t')
+#tcga_ov <- tcga_ov[(!tcga_ov$status == "BRCA mutations") ,]
+fit <- survfit(Surv(survival_days, survival_status) ~ exp3, data = tcga_ov)
+# Drawing curves
+ggsurvplot(fit, conf.int = TRUE, pval = TRUE) + ggtitle("Kaplan_Meier curve of ovarian cancer patients") + xlab("Days")
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r cox}
+fit2 <- coxph(Surv(survival_days, survival_status) ~ age + stage + brcaness +exp3 , data=tcga_ov)
+ggforest(fit2, data =tcga_ov)
+summary(fit2)
+sum(tcga_ov$exp3=='Sig3+')
+sum(tcga_ov$exp3=='Sig3-')
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
