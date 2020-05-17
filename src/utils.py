@@ -150,6 +150,12 @@ def get_data(dataset, threshold=100):
             all_samples = np.array(all_df)[:, 0].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
             data = np.array(all_df)[indices, 1:].astype('float')
+        elif 'hrd' in dataset:
+            all_df = pd.read_csv("data/icgc_brca_hrd.tsv", sep='\t')
+            filtered_samples = np.array(filtered_df)[:, 0].astype('str')
+            all_samples = np.array(all_df)[:, 1].astype('str')
+            indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
+            data = np.array(all_df)[indices, 2:].astype('float')
         else:
             data = np.array(filtered_df)[:, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
@@ -171,6 +177,8 @@ def get_data(dataset, threshold=100):
             path = 'data/nature2019/filter-staaf2019_BRCA-WGS_counts.tsv'
         elif 'labels' in dataset:
             path = 'data/nature2019/labels.tsv'
+        elif 'sigma-exp' in dataset:
+            path = 'data/nature2019/SigMA_output.tsv'
         else:
             raise ValueError('No such dataset {}'.format(dataset))
         df = pd.read_csv(path, sep='\t')
@@ -178,6 +186,73 @@ def get_data(dataset, threshold=100):
         samples = np.load('data/nature2019/nature2019_samples.npy')
         indices = [np.where(s == df_samples)[0][0] for s in samples]
         data = np.array(df)[indices, 1:].astype('float')
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif 'msk2018-LUAD' == dataset:
+        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        df = pd.read_csv(metadata_path, sep='\t')
+        df = df[df['oncotree_code'] == 'LUAD']
+        df = df[df['treatment_type'] == 'Monotherapy']
+        df = df[df['durable_clinical_benefit'] != 'NE']
+        samples = df['patient_id'].values
+        counts_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv'
+        df = pd.read_csv(counts_path, sep='\t')
+        count_samples = df['Unnamed: 0'].values
+        new_samples = []
+        indices = []
+        for s in samples:
+            for i, r in enumerate(count_samples):
+                if s in r:
+                    indices.append(i)
+                    new_samples.append(s)
+                    continue
+        data = np.array(df)[indices, 1:].astype('float')
+        active_signatures = [1, 2, 4, 5, 6, 13, 17]
+    elif 'msk2018-LUAD-labels' == dataset:
+        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        df = pd.read_csv(metadata_path, sep='\t')
+        df = df[df['oncotree_code'] == 'LUAD']
+        df = df[df['treatment_type'] == 'Monotherapy']
+        df = df[df['durable_clinical_benefit'] != 'NE']
+        samples = df['patient_id'].values
+        counts_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv'
+        df = pd.read_csv(counts_path, sep='\t')
+        count_samples = df['Unnamed: 0'].values
+        new_samples = []
+        indices = []
+        for s in samples:
+            for i, r in enumerate(count_samples):
+                if s in r:
+                    indices.append(i)
+                    new_samples.append(s)
+                    continue
+        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        df = pd.read_csv(metadata_path, sep='\t')
+        df = df[df['oncotree_code'] == 'LUAD']
+        df = df[df['treatment_type'] == 'Monotherapy']
+        df = df[df['durable_clinical_benefit'] != 'NE'].values
+        labels = []
+        for s in new_samples:
+            for l in df:
+                if s in l[0]:
+                    if l[-2] == 'YES':
+                        labels.append(1)
+                    elif l[-2] == 'NO':
+                        labels.append(0)
+        data = np.array(labels)
+        active_signatures = [1, 2, 4, 5, 6, 13, 17]
+    elif 'allen2018' in dataset:
+        if 'full' in dataset:
+            path = 'data/immunotherapy_response/wxs_mixed_allen_2018/raw/count96-mixed_allen_2018.tsv'
+        elif 'panel' in dataset:
+            path = 'data/immunotherapy_response/wxs_mixed_allen_2018/processed/deterministic/filter-mixed_allen_2018-WXS_counts.tsv'
+        elif 'labels' in dataset:
+            path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        elif 'sigma-exp' in dataset:
+            path = 'data/nature2019/SigMA_output.tsv'
+        else:
+            raise ValueError('No such dataset {}'.format(dataset))
+        df = pd.read_csv(path, sep='\t')
+        data = np.array(df)[:, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
@@ -206,5 +281,14 @@ def get_cosmic_signatures(dir_path='data/signatures/COSMIC/cosmic-signatures.tsv
     return pd.read_csv(dir_path, sep='\t', index_col=0).values
 
 
-if __name__ == "__main__":
-    get_data('MSK-ALL')
+def sigma_output_to_exposures(sigma_output):
+    all_df = pd.read_csv(sigma_output, sep='\t')
+    sigs = all_df['sigs_all'].to_list()
+    exposures = all_df['exps_all'].to_list()
+    output = np.zeros((len(sigs), 30))
+    for i, (a, b) in enumerate(zip(sigs, exposures)):
+        sig_indices = [int(s.split('_')[1]) - 1 for s in a.split('.')]
+        exp_values = np.array([float(s) for s in b.split('_')])
+        output[i, sig_indices] = exp_values
+
+    return output

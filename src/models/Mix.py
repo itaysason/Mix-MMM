@@ -128,9 +128,9 @@ class Mix:
 
         # Otherwise all existing mutations has prob > 0, to avoid any problem we remove 0 prob mutations
         good_indices = np.where(mutation_prob != 0)[0]
-        real_m = self.m
-        if len(good_indices) < self.m:
-            self.m = len(good_indices)
+        real_m = self.num_words
+        if len(good_indices) < self.num_words:
+            self.num_words = len(good_indices)
             self.data = self.data[:, good_indices]
             self.log_data = self.log_data[:, good_indices]
             self.e = self.e[:, good_indices]
@@ -140,8 +140,8 @@ class Mix:
         output = self._fit(['w', 'pi'])
 
         # Fix signatures back
-        if self.m < real_m:
-            self.m = real_m
+        if self.num_words < real_m:
+            self.num_words = real_m
             self.set_data(data)
             e = np.zeros((self.num_topics, self.num_words))
             e[:, good_indices] = self.e
@@ -158,9 +158,9 @@ class Mix:
         self.set_data(data)
         # When learning denovo, and there are mutations that are not in the catalog we remove them when training
         good_indices = np.where(self.data.sum(0) != 0)[0]
-        real_m = self.m
-        if len(good_indices) < self.m:
-            self.m = len(good_indices)
+        real_m = self.num_words
+        if len(good_indices) < self.num_words:
+            self.num_words = len(good_indices)
             self.data = self.data[:, good_indices]
             self.log_data = self.log_data[:, good_indices]
             self.e = self.e[:, good_indices]
@@ -170,8 +170,8 @@ class Mix:
         output = self._fit(['w', 'pi', 'e'])
 
         # Fix signatures back
-        if self.m < real_m:
-            self.m = real_m
+        if self.num_words < real_m:
+            self.num_words = real_m
             self.set_data(data)
             e = np.zeros((self.num_topics, self.num_words))
             e[:, good_indices] = self.e
