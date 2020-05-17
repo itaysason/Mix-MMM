@@ -3,7 +3,7 @@ from scipy.special import logsumexp
 
 
 class Mix:
-    def __init__(self, num_clusters, num_topics, init_params=None, epsilon=1e-4, max_iter=1e5):
+    def __init__(self, num_clusters, num_topics, num_words=None, init_params=None, epsilon=1e-4, max_iter=1e5):
         """
 
         :param num_clusters: Positive integer, number of clusters to learn.
@@ -14,7 +14,7 @@ class Mix:
         """
         self.num_topics = num_topics
         self.num_clusters = num_clusters
-        self.num_words = None
+        self.num_words = num_words
         self.e = None
         self.pi = None
         self.w = None
