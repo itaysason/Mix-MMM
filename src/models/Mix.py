@@ -238,6 +238,8 @@ class Mix:
                 curr_topic_counts = np.zeros(self.num_topics, dtype='int')
                 curr_word_counts = data[sample]
                 for word in range(len(curr_word_counts)):
+                    if data[sample, word] == 0:
+                        continue
                     curr_topic_counts[likeliest_topic_per_word[word]] += data[sample, word]
                     curr_prob += data[sample, word] * pr_topic_word[likeliest_topic_per_word[word], word]
                 if curr_prob > probabilites[sample]:
