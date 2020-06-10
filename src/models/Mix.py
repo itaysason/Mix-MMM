@@ -106,6 +106,25 @@ class Mix:
             e = self.e
         return w, pi, e
 
+    def remove_zero_prob_mutations(self):
+        good_indices = np.where(self.e.sum(0) != 0)[0]
+        real_m = self.num_words
+        if len(good_indices) < self.num_words:
+            self.num_words = len(good_indices)
+            self.data = self.data[:, good_indices]
+            self.log_data = self.log_data[:, good_indices]
+            self.e = self.e[:, good_indices]
+            self.e /= self.e.sum(1, keepdims=True)
+        return real_m, good_indices
+
+    def insert_zero_prob_mutations(self, data, real_m, good_indices):
+        if self.num_words < real_m:
+            self.num_words = real_m
+            self.set_data(data)
+            e = np.zeros((self.num_topics, self.num_words))
+            e[:, good_indices] = self.e
+            self.e = e
+
     def refit(self, data, handle_zero_prob_mutations='remove'):
         """
         Fitting only the clusters (pi) and the weights (w).
@@ -118,25 +137,13 @@ class Mix:
         self.set_data(data)
         if handle_zero_prob_mutations == 'remove':
             # to avoid any problem we remove 0 prob mutations
-            good_indices = np.where(self.e.sum(0) != 0)[0]
-            real_m = self.num_words
-            if len(good_indices) < self.num_words:
-                self.num_words = len(good_indices)
-                self.data = self.data[:, good_indices]
-                self.log_data = self.log_data[:, good_indices]
-                self.e = self.e[:, good_indices]
-                self.e /= self.e.sum(1, keepdims=True)
+            real_m, good_indices = self.remove_zero_prob_mutations()
 
             # Run refiting
             output = self._fit(['w', 'pi'])
 
             # Fix signatures back
-            if self.num_words < real_m:
-                self.num_words = real_m
-                self.set_data(data)
-                e = np.zeros((self.num_topics, self.num_words))
-                e[:, good_indices] = self.e
-                self.e = e
+            self.insert_zero_prob_mutations(data, real_m, good_indices)
 
             return output
         else:
@@ -249,10 +256,11 @@ class Mix:
         return clusters, topics, probabilites
 
     def expected_topics(self, data):
+        self.set_data(data)
+        real_m, good_indices = self.remove_zero_prob_mutations()
         self.pi = np.log(self.pi)
         self.w = np.log(self.w)
         self.e = np.log(self.e)
-        self.set_data(data)
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
         likelihood_sample_cluster += self.w
         likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 1, keepdims=True)
@@ -261,13 +269,15 @@ class Mix:
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
         self.w = np.exp(self.w)
+        self.insert_zero_prob_mutations(data, real_m, good_indices)
         return np.exp(log_expected_topics)
 
     def soft_cluster(self, data):
+        self.set_data(data)
+        real_m, good_indices = self.remove_zero_prob_mutations()
         self.pi = np.log(self.pi)
         self.w = np.log(self.w)
         self.e = np.log(self.e)
-        self.set_data(data)
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
         likelihood_sample_cluster += self.w
         likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 1, keepdims=True)
@@ -275,6 +285,7 @@ class Mix:
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
         self.w = np.exp(self.w)
+        self.insert_zero_prob_mutations(data, real_m, good_indices)
         return likelihood_sample_cluster
 
     def weighted_exposures(self, data):
