@@ -63,11 +63,11 @@ class Mix:
         log_expected_e = np.zeros((num_clusters, num_samples, num_topics, num_words))
         log_expected_pi = np.zeros((num_clusters, num_samples, num_topics))
         log_e = self.e
-        for n in range(self.data.shape[0]):
-            curr_log_b = self.log_data[n]
-            curr_b = self.data[n]
-            for l, log_pi in enumerate(self.pi):
-                log_prob_topic_word = (log_e.T + log_pi).T
+        for l, log_pi in enumerate(self.pi):
+            log_prob_topic_word = (log_e.T + log_pi).T
+            for n in range(self.data.shape[0]):
+                curr_log_b = self.log_data[n]
+                curr_b = self.data[n]
                 log_prob_word = logsumexp(log_prob_topic_word, axis=0)
                 log_likelihood[n, l] = np.inner(log_prob_word, curr_b)
 
