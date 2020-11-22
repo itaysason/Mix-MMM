@@ -4,7 +4,6 @@ survival_analysis/processed/
 data/panel_downsize/
 *.DS_Store
 experiments/
-data/processed/
 data/raw/
 .snakemake/
 .Snakefile.swp
