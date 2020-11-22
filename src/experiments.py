@@ -1,7 +1,6 @@
 from src.models.Mix import Mix
 import numpy as np
 import time
-#import smoothing
 from src.utils import category_smooth
 
 
@@ -25,7 +24,6 @@ def split_train_test_sample_cv(data, num_folds, fold, shuffle_seed=None):
             train_samples.extend(splits[chunk])
     train_data = data[train_samples]
     test_data = data[test_samples]
-    #smoothing
     train_data = category_smooth(train_data) 
     test_data = category_smooth(test_data)
     return train_data, test_data

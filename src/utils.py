@@ -22,9 +22,9 @@ def category_smooth(ori_data, sv=1e-3):
     sum_ori_column = ori_data.sum(axis=0)
     zero_loc = np.where(sum_ori_column == 0)[0]
     if zero_loc.size == 0:
-        print("No smooth needed")
+        print("No smoothing needed")
     else:
-        print("The following columns need smooth", zero_loc)
+        print("The following columns need smoothing", zero_loc)
         ori_data = ori_data.astype(float)
         for zero_col in zero_loc:
             ori_data[:, zero_col] += sv
@@ -35,7 +35,7 @@ def get_oncocode(threshold):
     """
     return all msk datasets names which have a count larger than the threshold
     """
-    all_df = pd.read_csv("data/processed/oncotype_counts.txt", sep='\t')
+    all_df = pd.read_csv("data/MSK-processed/oncotype_counts.txt", sep='\t')
     all_df['Counts'] = all_df['Counts'].astype(int)
     oncocode = all_df[all_df['Counts'] > threshold]['Oncotree']
     return oncocode
@@ -95,15 +95,18 @@ def get_data(dataset, threshold=100):
     threshold: filter out oncology types with few samples, i.e. fewer than the threshould.
     """
     if dataset == 'ICGC-BRCA':
-        data = np.load('data/BRCA_counts.npy')
+        data = np.load('data/ICGC-BRCA/BRCA_counts.npy')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif dataset == 'TCGA-OV':
+        data = np.load('data/TCGA-OV/OV_counts.npy').astype('float')
+        active_signatures = [1, 3, 5]
     elif dataset == 'MSK-ALL':
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
         loaded_onco = []
         onco_num_mutations = []
         for oc in oncocode:
-            dat_f = "data/processed/%s_counts.npy" % oc
+            dat_f = "data/MSK-processed/%s_counts.npy" % oc
             if not os.path.isfile(dat_f):
                 Warning('%s is not loaded: file does not exist!' % dat_f)
             else:
@@ -120,7 +123,7 @@ def get_data(dataset, threshold=100):
         tmp_data_ls = []
         loaded_onco = []
         for oc in oncocode:
-            dat_f = "data/processed/%s_counts.npy" % oc
+            dat_f = "data/MSK-processed/%s_counts.npy" % oc
             if not os.path.isfile(dat_f):
                 Warning('%s is not loaded: file does not exist!' % dat_f)
             else:
@@ -129,29 +132,24 @@ def get_data(dataset, threshold=100):
                 loaded_onco.append(oc)
         data = np.vstack(tmp_data_ls)
         active_signatures = get_active_sig(loaded_onco)
-    elif dataset == 'TCGA-OV':
-        data = np.load('data/OV_counts.npy').astype('float')
-        active_signatures = [1, 3, 5]
     elif 'BRCA' in dataset and 'ds' in dataset and 'part' in dataset:
         ds_size = dataset.split('-')[1][2:]
-        part = dataset[-1]
-        data = np.load('data/downsize/brca-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        data = np.load('data/ICGC-BRCA/downsampled/brca-downsize{}_counts.npy'.format(ds_size.zfill(3)))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'OV' in dataset and 'ds' in dataset and 'part' in dataset:
         ds_size = dataset.split('-')[1][2:]
-        part = dataset[-1]
-        data = np.load('data/downsize/ov-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        data = np.load('data/TCGA-OV/downsampled/ov-downsize{}_counts.npy'.format(ds_size.zfill(3)))
         active_signatures = [1, 3, 5]
     elif 'BRCA' in dataset and 'panel' in dataset:
-        filtered_df = pd.read_csv("data/panel_downsize/filter-BRCA-WGS_counts.tsv", sep='\t')
+        filtered_df = pd.read_csv("data/ICGC-BRCA/panel-BRCA-WGS_counts.tsv", sep='\t')
         if 'full' in dataset:
-            all_df = pd.read_csv("data/counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv", sep='\t')
+            all_df = pd.read_csv("data/ICGC-BRCA/counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv", sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 0].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
             data = np.array(all_df)[indices, 1:].astype('float')
         elif 'hrd' in dataset:
-            all_df = pd.read_csv("data/icgc_brca_hrd.tsv", sep='\t')
+            all_df = pd.read_csv("data/ICGC-BRCA/icgc_brca_hrd.tsv", sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 1].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
@@ -160,9 +158,9 @@ def get_data(dataset, threshold=100):
             data = np.array(filtered_df)[:, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'OV' in dataset and 'panel' in dataset:
-        filtered_df = pd.read_csv("data/panel_downsize/filter-OV-WXS_counts.tsv", sep='\t')
+        filtered_df = pd.read_csv("data/TCGA-OV/panel-OV-WXS_counts.tsv", sep='\t')
         if 'full' in dataset:
-            all_df = pd.read_csv("data/counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv", sep='\t')
+            all_df = pd.read_csv("data/TCGA-OV/counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv", sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 0].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
@@ -273,7 +271,7 @@ def get_model(parameters):
     parameters = {key: np.array(val) for key, val in parameters.items()}
     num_clusters = len(parameters['w'])
     num_topics = len(parameters['e'])
-    model = Mix(num_clusters, num_topics, parameters)
+    model = Mix(num_clusters, num_topics, init_params=parameters)
     return model
 
 
@@ -283,6 +281,9 @@ def get_cosmic_signatures(dir_path='data/signatures/COSMIC/cosmic-signatures.tsv
 
 def sigma_output_to_exposures(sigma_output):
     all_df = pd.read_csv(sigma_output, sep='\t')
+    # In case this is comma separated
+    if len(all_df.columns) == 1:
+        all_df = pd.read_csv(sigma_output, sep=',')
     sigs = all_df['sigs_all'].to_list()
     exposures = all_df['exps_all'].to_list()
     output = np.zeros((len(sigs), 30))
@@ -290,5 +291,24 @@ def sigma_output_to_exposures(sigma_output):
         sig_indices = [int(s.split('_')[1]) - 1 for s in a.split('.')]
         exp_values = np.array([float(s) for s in b.split('_')])
         output[i, sig_indices] = exp_values
+
+    return output
+
+
+def sigma_output_to_clusters(sigma_output):
+    all_df = pd.read_csv(sigma_output, sep='\t')
+    # In case this is comma separated
+    if len(all_df.columns) == 1:
+        all_df = pd.read_csv(sigma_output, sep=',')
+    clusters = all_df['categ'].to_list()
+
+    all_clusters = ['Signature_17', 'Signature_3_hc', 'Signature_3_lc', 'Signature_8', 'Signature_APOBEC',
+                    'Signature_clock']
+    num_clusters = len(all_clusters)
+    cluster_to_num = {all_clusters[i]: i for i in range(num_clusters)}
+    output = np.zeros((len(clusters), num_clusters))
+
+    for i, c in enumerate(clusters):
+        output[i, cluster_to_num[c]] = 1
 
     return output
