@@ -3,6 +3,7 @@ import numpy as np
 from src.models.Mix import Mix
 import pandas as pd
 import os
+from src.constants import ROOT_DIR
 
 
 def save_json(file_name, dict_to_save):
@@ -35,7 +36,7 @@ def get_oncocode(threshold):
     """
     return all msk datasets names which have a count larger than the threshold
     """
-    all_df = pd.read_csv("data/MSK-processed/oncotype_counts.txt", sep='\t')
+    all_df = pd.read_csv(os.path.join(ROOT_DIR, "data/MSK-processed/oncotype_counts.txt"), sep='\t')
     all_df['Counts'] = all_df['Counts'].astype(int)
     oncocode = all_df[all_df['Counts'] > threshold]['Oncotree']
     return oncocode
@@ -95,10 +96,10 @@ def get_data(dataset, threshold=100):
     threshold: filter out oncology types with few samples, i.e. fewer than the threshould.
     """
     if dataset == 'ICGC-BRCA':
-        data = np.load('data/ICGC-BRCA/BRCA_counts.npy')
+        data = np.load(os.path.join(ROOT_DIR, 'data/ICGC-BRCA/BRCA_counts.npy'))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif dataset == 'TCGA-OV':
-        data = np.load('data/TCGA-OV/OV_counts.npy').astype('float')
+        data = np.load(os.path.join(ROOT_DIR, 'data/TCGA-OV/OV_counts.npy')).astype('float')
         active_signatures = [1, 3, 5]
     elif dataset == 'MSK-ALL':
         oncocode = get_oncocode(threshold)
@@ -106,7 +107,7 @@ def get_data(dataset, threshold=100):
         loaded_onco = []
         onco_num_mutations = []
         for oc in oncocode:
-            dat_f = "data/MSK-processed/%s_counts.npy" % oc
+            dat_f = os.path.join(ROOT_DIR, "data/MSK-processed/%s_counts.npy") % oc
             if not os.path.isfile(dat_f):
                 Warning('%s is not loaded: file does not exist!' % dat_f)
             else:
@@ -123,7 +124,7 @@ def get_data(dataset, threshold=100):
         tmp_data_ls = []
         loaded_onco = []
         for oc in oncocode:
-            dat_f = "data/MSK-processed/%s_counts.npy" % oc
+            dat_f = os.path.join(ROOT_DIR, "data/MSK-processed/%s_counts.npy") % oc
             if not os.path.isfile(dat_f):
                 Warning('%s is not loaded: file does not exist!' % dat_f)
             else:
@@ -134,22 +135,22 @@ def get_data(dataset, threshold=100):
         active_signatures = get_active_sig(loaded_onco)
     elif 'BRCA' in dataset and 'ds' in dataset and 'part' in dataset:
         ds_size = dataset.split('-')[1][2:]
-        data = np.load('data/ICGC-BRCA/downsampled/brca-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        data = np.load(os.path.join(ROOT_DIR, 'data/ICGC-BRCA/downsampled/brca-downsize{}_counts.npy'.format(ds_size.zfill(3))))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'OV' in dataset and 'ds' in dataset and 'part' in dataset:
         ds_size = dataset.split('-')[1][2:]
-        data = np.load('data/TCGA-OV/downsampled/ov-downsize{}_counts.npy'.format(ds_size.zfill(3)))
+        data = np.load(os.path.join(ROOT_DIR, 'data/TCGA-OV/downsampled/ov-downsize{}_counts.npy'.format(ds_size.zfill(3))))
         active_signatures = [1, 3, 5]
     elif 'BRCA' in dataset and 'panel' in dataset:
-        filtered_df = pd.read_csv("data/ICGC-BRCA/panel-BRCA-WGS_counts.tsv", sep='\t')
+        filtered_df = pd.read_csv(os.path.join(ROOT_DIR, "data/ICGC-BRCA/panel-BRCA-WGS_counts.tsv"), sep='\t')
         if 'full' in dataset:
-            all_df = pd.read_csv("data/ICGC-BRCA/counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv", sep='\t')
+            all_df = pd.read_csv(os.path.join(ROOT_DIR, "data/ICGC-BRCA/counts.ICGC-BRCA-EU_BRCA_22.WGS.SBS-96.tsv"), sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 0].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
             data = np.array(all_df)[indices, 1:].astype('float')
         elif 'hrd' in dataset:
-            all_df = pd.read_csv("data/ICGC-BRCA/icgc_brca_hrd.tsv", sep='\t')
+            all_df = pd.read_csv(os.path.join(ROOT_DIR, "data/ICGC-BRCA/icgc_brca_hrd.tsv"), sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 1].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
@@ -158,9 +159,9 @@ def get_data(dataset, threshold=100):
             data = np.array(filtered_df)[:, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'OV' in dataset and 'panel' in dataset:
-        filtered_df = pd.read_csv("data/TCGA-OV/panel-OV-WXS_counts.tsv", sep='\t')
+        filtered_df = pd.read_csv(os.path.join(ROOT_DIR, "data/TCGA-OV/panel-OV-WXS_counts.tsv"), sep='\t')
         if 'full' in dataset:
-            all_df = pd.read_csv("data/TCGA-OV/counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv", sep='\t')
+            all_df = pd.read_csv(os.path.join(ROOT_DIR, "data/TCGA-OV/counts.TCGA-OV_OV_mc3.v0.2.8.WXS.SBS-96.tsv"), sep='\t')
             filtered_samples = np.array(filtered_df)[:, 0].astype('str')
             all_samples = np.array(all_df)[:, 0].astype('str')
             indices = [np.where(s == all_samples)[0][0] for s in filtered_samples]
@@ -170,29 +171,29 @@ def get_data(dataset, threshold=100):
         active_signatures = [1, 3, 5]
     elif 'nature2019' in dataset:
         if 'full' in dataset:
-            path = 'data/nature2019/counts.staaf2019_BRCA_WGS.tsv'
+            path = os.path.join(ROOT_DIR, 'data/nature2019/counts.staaf2019_BRCA_WGS.tsv')
         elif 'panel' in dataset:
-            path = 'data/nature2019/filter-staaf2019_BRCA-WGS_counts.tsv'
+            path = os.path.join(ROOT_DIR, 'data/nature2019/filter-staaf2019_BRCA-WGS_counts.tsv')
         elif 'labels' in dataset:
-            path = 'data/nature2019/labels.tsv'
+            path = os.path.join(ROOT_DIR, 'data/nature2019/labels.tsv')
         elif 'sigma-exp' in dataset:
-            path = 'data/nature2019/SigMA_output.tsv'
+            path = os.path.join(ROOT_DIR, 'data/nature2019/SigMA_output.tsv')
         else:
             raise ValueError('No such dataset {}'.format(dataset))
         df = pd.read_csv(path, sep='\t')
         df_samples = np.array(df)[:, 0].astype('str')
-        samples = np.load('data/nature2019/nature2019_samples.npy')
+        samples = np.load(os.path.join(ROOT_DIR, 'data/nature2019/nature2019_samples.npy'))
         indices = [np.where(s == df_samples)[0][0] for s in samples]
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'msk2018-LUAD' == dataset:
-        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv'
+        counts_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -206,13 +207,13 @@ def get_data(dataset, threshold=100):
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 4, 5, 6, 13, 17]
     elif 'msk2018-LUAD-labels' == dataset:
-        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv'
+        counts_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -223,7 +224,7 @@ def get_data(dataset, threshold=100):
                     indices.append(i)
                     new_samples.append(s)
                     continue
-        metadata_path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
@@ -240,13 +241,13 @@ def get_data(dataset, threshold=100):
         active_signatures = [1, 2, 4, 5, 6, 13, 17]
     elif 'allen2018' in dataset:
         if 'full' in dataset:
-            path = 'data/immunotherapy_response/wxs_mixed_allen_2018/raw/count96-mixed_allen_2018.tsv'
+            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/wxs_mixed_allen_2018/raw/count96-mixed_allen_2018.tsv')
         elif 'panel' in dataset:
-            path = 'data/immunotherapy_response/wxs_mixed_allen_2018/processed/deterministic/filter-mixed_allen_2018-WXS_counts.tsv'
+            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/wxs_mixed_allen_2018/processed/deterministic/filter-mixed_allen_2018-WXS_counts.tsv')
         elif 'labels' in dataset:
-            path = 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv'
+            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         elif 'sigma-exp' in dataset:
-            path = 'data/nature2019/SigMA_output.tsv'
+            path = os.path.join(ROOT_DIR, 'data/nature2019/SigMA_output.tsv')
         else:
             raise ValueError('No such dataset {}'.format(dataset))
         df = pd.read_csv(path, sep='\t')
@@ -275,7 +276,8 @@ def get_model(parameters):
     return model
 
 
-def get_cosmic_signatures(dir_path='data/signatures/COSMIC/cosmic-signatures.tsv'):
+def get_cosmic_signatures(dir_path=None):
+    dir_path = os.path.join(ROOT_DIR, 'data/signatures/COSMIC/cosmic-signatures.tsv') if dir_path is None else dir_path
     return pd.read_csv(dir_path, sep='\t', index_col=0).values
 
 

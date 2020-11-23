@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.misc import logsumexp
+from src.models.logsumexp import logsumexp
 
 
 class MMM:

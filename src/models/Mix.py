@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.special import logsumexp
+from src.models.logsumexp import logsumexp
 
 
 class Mix:
