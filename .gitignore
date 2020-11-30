@@ -11,3 +11,7 @@ __pycache__/
 src/models/__pycache__/
 figures/
 .idea/
+dev.py
+
+# Temporarily removed
+data/tmp/
