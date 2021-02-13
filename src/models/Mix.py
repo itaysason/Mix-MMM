@@ -21,6 +21,9 @@ class Mix:
         self.epsilon = epsilon
         self.max_iter = int(max_iter)
         self.set_params(init_params)
+        # self.num_samples = None
+        # self.start_samples = None
+        # self.end_samples = None
         self.data = None
         self.log_data = None
 
@@ -48,6 +51,34 @@ class Mix:
             self.w /= self.w.sum()
 
     def set_data(self, data):
+        # # find duplicate samples
+        # tmp = []
+        # data_argmax = np.argmax(data, 1)
+        # data_num_mutations = np.sum(data, 1)
+        # tmp_argmax = []
+        # tmp_num_mutations = []
+        # num_duplicates = []
+        # for i, sample in enumerate(data):
+        #     flag = 1
+        #     for j, uni in enumerate(tmp):
+        #         if data_argmax[i] == tmp_argmax[j] and data_num_mutations[i] == tmp_num_mutations[j]:
+        #             if np.all(sample == uni):
+        #                 flag = 0
+        #                 num_duplicates[j] += 1
+        #                 continue
+        #     if flag:
+        #         tmp.append(sample)
+        #         tmp_argmax.append(data_argmax[i])
+        #         tmp_num_mutations.append(data_num_mutations[i])
+        #         num_duplicates.append(1)
+        # tmp = np.array(tmp)
+        #
+        # self.start_samples = np.zeros(len(tmp), dtype='int')
+        # self.end_samples = np.zeros(len(tmp), dtype='int')
+        # self.end_samples[0] = num_duplicates[0]
+        # for i in range(1, len(tmp)):
+        #     self.start_samples =
+        # self.num_samples = len(data)
         self.data = data
         self.log_data = np.log(data)
         if self.num_words is None:
@@ -298,3 +329,15 @@ class Mix:
 
     def get_params(self):
         return {'pi': self.pi.copy(), 'w': self.w.copy(), 'e': self.e.copy()}
+
+    def sample(self, num_mutations):
+        num_samples = len(num_mutations)
+        clusters = np.random.choice(self.num_clusters, num_samples, p=self.w).tolist()
+        signatures = [np.random.choice(self.num_topics, num_mutations[i], p=self.pi[clusters[i]]).tolist() for i in range(num_samples)]
+        mutations = [[0] * num_mutations[i] for i in range(num_samples)]
+
+        for i in range(num_samples):
+            for j, signature in enumerate(signatures[i]):
+                mutations[i][j] = np.random.choice(self.num_words, p=self.e[signature])
+
+        return clusters, signatures, mutations

@@ -7,11 +7,15 @@ from src.constants import ROOT_DIR
 
 
 def save_json(file_name, dict_to_save):
-    with open(file_name + '.json', 'w') as fp:
+    if file_name[-5:] != '.json':
+        file_name += '.json'
+    with open(file_name, 'w') as fp:
         json.dump(dict_to_save, fp)
 
 
 def load_json(file_name):
+    if file_name[-5:] != '.json':
+        file_name += '.json'
     return json.load(open(file_name))
 
 
@@ -116,9 +120,11 @@ def get_data(dataset, threshold=100):
                 loaded_onco.append(oc)
                 onco_num_mutations.append(tmp_data.sum())
         data = np.vstack(tmp_data_ls)
-        print("Successfully loaded %d samples from %d datasets: %s" % (np.shape(data)[0], len(loaded_onco), ', '.join(loaded_onco)))
         active_signatures = get_active_sig(loaded_onco)
-        print("Here are activate signatures", active_signatures)
+    elif dataset == 'MSKCC':
+        all_df = pd.read_csv(os.path.join(ROOT_DIR, 'data/tmp/MSKCC/processed_data.tsv'), sep='\t')
+        data = np.array(all_df)[:, 1:].astype('float')
+        active_signatures = np.arange(1, 31)
     elif dataset == 'clustered-MSK-ALL':
         oncocode = get_oncocode(threshold)
         tmp_data_ls = []
@@ -187,13 +193,13 @@ def get_data(dataset, threshold=100):
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'msk2018-LUAD' == dataset:
-        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
+        counts_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -207,13 +213,13 @@ def get_data(dataset, threshold=100):
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 4, 5, 6, 13, 17]
     elif 'msk2018-LUAD-labels' == dataset:
-        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
+        counts_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -224,7 +230,7 @@ def get_data(dataset, threshold=100):
                     indices.append(i)
                     new_samples.append(s)
                     continue
-        metadata_path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
@@ -241,17 +247,20 @@ def get_data(dataset, threshold=100):
         active_signatures = [1, 2, 4, 5, 6, 13, 17]
     elif 'allen2018' in dataset:
         if 'full' in dataset:
-            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/wxs_mixed_allen_2018/raw/count96-mixed_allen_2018.tsv')
+            path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/wxs_mixed_allen_2018/raw/count96-mixed_allen_2018.tsv')
         elif 'panel' in dataset:
-            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/wxs_mixed_allen_2018/processed/deterministic/filter-mixed_allen_2018-WXS_counts.tsv')
+            path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/wxs_mixed_allen_2018/processed/deterministic/filter-mixed_allen_2018-WXS_counts.tsv')
         elif 'labels' in dataset:
-            path = os.path.join(ROOT_DIR, 'data/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+            path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         elif 'sigma-exp' in dataset:
             path = os.path.join(ROOT_DIR, 'data/nature2019/SigMA_output.tsv')
         else:
             raise ValueError('No such dataset {}'.format(dataset))
         df = pd.read_csv(path, sep='\t')
         data = np.array(df)[:, 1:].astype('float')
+        active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
+    elif 'simulated' in dataset:
+        data = np.load(os.path.join(ROOT_DIR, 'data/simulated-data/{}/mutations.npy'.format(dataset[10:])))
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     else:
         raise ValueError('No such dataset {}'.format(dataset))
@@ -276,9 +285,10 @@ def get_model(parameters):
     return model
 
 
-def get_cosmic_signatures(dir_path=None):
-    dir_path = os.path.join(ROOT_DIR, 'data/signatures/COSMIC/cosmic-signatures.tsv') if dir_path is None else dir_path
-    return pd.read_csv(dir_path, sep='\t', index_col=0).values
+def get_cosmic_signatures():
+    dir_path = os.path.join(ROOT_DIR, 'data/signatures/COSMIC/cosmic-signatures.tsv')
+    signatures = pd.read_csv(dir_path, sep='\t', index_col=0).values
+    return signatures
 
 
 def sigma_output_to_exposures(sigma_output):
@@ -286,8 +296,8 @@ def sigma_output_to_exposures(sigma_output):
     # In case this is comma separated
     if len(all_df.columns) == 1:
         all_df = pd.read_csv(sigma_output, sep=',')
-    sigs = all_df['sigs_all'].to_list()
-    exposures = all_df['exps_all'].to_list()
+    sigs = all_df['sigs_all'].tolist()
+    exposures = all_df['exps_all'].tolist()
     output = np.zeros((len(sigs), 30))
     for i, (a, b) in enumerate(zip(sigs, exposures)):
         sig_indices = [int(s.split('_')[1]) - 1 for s in a.split('.')]
@@ -302,10 +312,10 @@ def sigma_output_to_clusters(sigma_output):
     # In case this is comma separated
     if len(all_df.columns) == 1:
         all_df = pd.read_csv(sigma_output, sep=',')
-    clusters = all_df['categ'].to_list()
+    clusters = all_df['categ'].values
 
     all_clusters = ['Signature_17', 'Signature_3_hc', 'Signature_3_lc', 'Signature_8', 'Signature_APOBEC',
-                    'Signature_clock']
+                    'Signature_clock', 'Signature_3 (No MVA)']
     num_clusters = len(all_clusters)
     cluster_to_num = {all_clusters[i]: i for i in range(num_clusters)}
     output = np.zeros((len(clusters), num_clusters))

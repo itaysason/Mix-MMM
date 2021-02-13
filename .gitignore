@@ -12,6 +12,8 @@ src/models/__pycache__/
 figures/
 .idea/
 dev.py
+data/simulated-data
+results/
 
 # Temporarily removed
 data/tmp/

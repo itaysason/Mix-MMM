@@ -10,6 +10,7 @@ def logsumexp(a, axis=None, keepdims=False):
     :return:
     """
     a_max = np.max(a, axis=axis, keepdims=True)
+    a_max[np.isneginf(a_max)] = 0
     output = np.log(np.sum(np.exp(a - a_max), axis=axis, keepdims=keepdims))
     if not keepdims:
         a_max = np.squeeze(a_max, axis=axis)
