@@ -3,7 +3,10 @@ from src.experiments import train_mix
 import click
 import time
 import os
+import warnings
 
+
+warnings.filterwarnings('ignore')
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -21,7 +24,7 @@ def simple_cli(debug, verbosity):
 @click.option('--use_cosmic', type=int)
 @click.option('--num_signatures', type=int, default=0)
 @click.option('--random_seed', type=int, default=0)
-@click.option('--max_iterations', type=int, default=10000)
+@click.option('--max_iterations', type=int, default=1000)
 @click.option('--epsilon', type=float, default=1e-10)
 @click.option('--out_dir', type=str, default='experiments/trained_models')
 def train_model(dataset, num_clusters, use_cosmic, num_signatures, random_seed, max_iterations, epsilon, out_dir):

@@ -52,17 +52,17 @@ mix_OV_panel_models = expand(os.path.join(TRAINED_MODELS, 'OV-panel-part{part}/r
 if fast:
     import data.best_models as best_models
 
-    mix_denovo_msk_models = expand({models}, models=best_models.BEST_MSK_DENOVO_MODELS)
-    mix_refit_msk_models = expand({models}, models=best_models.BEST_MSK_REFIT_MODELS)
+    mix_denovo_msk_models = expand('{models}', models=best_models.BEST_MSK_DENOVO_MODELS)
+    mix_refit_msk_models = expand('{models}', models=best_models.BEST_MSK_REFIT_MODELS)
 
-    mix_BRCA_downsampled_models = expand({models}, models=best_models.BEST_BRCA_DS_MODELS)
-    mix_BRCA_panel_models = expand({models}, models=best_models.BEST_BRCA_PANEL_MODELS)
-    mix_BRCA_full_panel_models = expand({models}, models=best_models.BEST_BRCA_FULL_PANEL_MODELS)
+    mix_BRCA_downsampled_models = expand('{models}', models=best_models.BEST_BRCA_DS_MODELS)
+    mix_BRCA_panel_models = expand('{models}', models=best_models.BEST_BRCA_PANEL_MODELS)
+    mix_BRCA_full_panel_models = expand('{models}', models=best_models.BEST_BRCA_FULL_PANEL_MODELS)
 
-    mix_OV_downsampled_models = expand({models}, models=best_models.BEST_OV_DS_MODELS)
-    mix_OV_panel_models = expand({models}, models=best_models.BEST_OV_PANEL_MODELS)
+    mix_OV_downsampled_models = expand('{models}', models=best_models.BEST_OV_DS_MODELS)
+    mix_OV_panel_models = expand('{models}', models=best_models.BEST_OV_PANEL_MODELS)
 
-    mix_synthetic_models = expand({models}, models=best_models.BEST_SYNTHETIC_MODELS)
+    mix_synthetic_models = expand('{models}', models=best_models.BEST_SYNTHETIC_MODELS)
 
 
 ### Results files
