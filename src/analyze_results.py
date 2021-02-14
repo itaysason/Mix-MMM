@@ -6,13 +6,9 @@ from src.models.MMM import MMM
 import pandas as pd
 from sklearn.decomposition import NMF
 from sklearn.metrics.cluster import mutual_info_score, adjusted_mutual_info_score
-from sklearn.metrics import roc_auc_score, average_precision_score
-from sklearn.linear_model import LogisticRegression
-from sklearn.cross_decomposition import CCA
+from sklearn.metrics import roc_auc_score
 from sklearn.cluster import KMeans
-from sklearn.svm import OneClassSVM
 from scipy.optimize import nnls
-from scipy.stats import spearmanr, pearsonr
 from src.constants import ROOT_DIR
 from scipy.stats import ranksums
 import seaborn as sns
@@ -486,7 +482,7 @@ def plot_cluster_AMI(range_clusters, computation='AMI'):
     return
 
 
-def RE(dataset, models=None, computation='mutations-RE'):
+def RE(dataset, models=None, computation='mutations'):
     # Handle input
     if models is None:
         models = ['MIX-conditional-clustering', 'MIX-soft-clustering', 'NNLS']
@@ -743,7 +739,7 @@ def compare_panel_clusters():
             clusters = np.argmax(mix.soft_cluster(full_data), 1)
 
         elif model == 'SigMA':
-            d = os.path.join(ROOT_DIR, 'data/sigma_exposure/out-sigma-brca-panel-extended.tsv')
+            d = os.path.join(ROOT_DIR, 'data/ICGC-BRCA/out-sigma-brca-panel.tsv')
             all_df = pd.read_csv(d, sep=',')
             clusters = all_df['categ'].values
             unique_clusters = np.unique(clusters)
@@ -768,8 +764,8 @@ def compare_panel_clusters():
         dists_in_clusters = np.array(dists_in_clusters)
         dists_out_clusters = np.array(dists_out_clusters)
 
-        dists_in_clusters = np.random.choice(dists_in_clusters, 100, replace=False)
-        dists_out_clusters = np.random.choice(dists_out_clusters, 100, replace=False)
+        dists_in_clusters = np.random.choice(dists_in_clusters, 200, replace=False)
+        dists_out_clusters = np.random.choice(dists_out_clusters, 200, replace=False)
         corrs.extend(dists_in_clusters)
         corrs.extend(dists_out_clusters)
         models.extend([model] * len(dists_out_clusters) * 2)

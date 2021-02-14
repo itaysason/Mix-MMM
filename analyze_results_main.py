@@ -16,7 +16,7 @@ def simple_cli(debug, verbosity):
 
 @simple_cli.command('reconstruction_error', short_help='Train and save model')
 @click.option('--dataset', type=click.Choice(['BRCA', 'OV']))
-@click.option('--error', type=click.Choice(['mutations-RE', 'exposures-RE']))
+@click.option('--error', type=click.Choice(['mutations', 'exposures']))
 @click.option('--out_dir', type=str, default='results/RE')
 def reconstruction_error(dataset, error, out_dir):
     out_dir = os.path.join(ROOT_DIR, out_dir)

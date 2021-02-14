@@ -43,14 +43,28 @@ mix.refit(data)
 
 ### Reproducing paper results
 
-Use the snakefile to reproduce all models used in the paper:
+First to prepare the data run
+
+```sh
+snakemake data_prep -j{num_cores}
+```
+
+Then use the snakefile to reproduce all models used in the paper:
 
 ```sh
 snakemake all -j{num_cores}
 ```
 
-This will take a long time so there is a rule that produces less results in less time
+This will take a long time because each model is trained 10 times, so to save time and train only the best seed for
+each model, first change the False in line 6 in Snakefile to True.
+This will reduce running time by 10x, but still might take a long time, so if you are willing to drop the synthetic data
+results you can run:
 
 ```sh
-snakemake all -j{num_cores}
+snakemake all_no_synthetic -j{num_cores}
 ```
+
+Another way to produce (most likely) similar results but faster is to
+change the default 1000 iterations in line 7 in Snakefile. This will reduce running time but will change the results
+(for better or worse). Also note that the best seeds were chosen using 1000 iterations and there is no guarantee they
+are the best seeds for other max_iterations.

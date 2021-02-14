@@ -2,8 +2,12 @@ import os
 from src.constants import ROOT_DIR
 
 
+# Parameters
+fast = False
+max_iterations = 1000
+
 random_seeds = [140296, 142857, 314179, 847662, 3091985, 28021991, 554433, 123456, 654321, 207022]
-ds_means = [3, 6, 9, 12, 15, 18, 21, 24, 27]
+ds_means = [3, 6, 9, 12, 15, 18]
 TRAINED_MODELS = os.path.join(ROOT_DIR, 'experiments', 'trained_models')
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
@@ -45,6 +49,22 @@ mix_OV_downsampled_models = expand(os.path.join(TRAINED_MODELS, 'OV-ds{a}-part{p
 mix_OV_panel_models = expand(os.path.join(TRAINED_MODELS, 'OV-panel-part{part}/refit/mix_{mix_cluster}clusters_003signatures/{seed}seed.json'),
                             part=['1', '2'], mix_cluster=mix_num_clusters, seed=random_seeds)
 
+if fast:
+    import data.best_models as best_models
+
+    mix_denovo_msk_models = expand({models}, models=best_models.BEST_MSK_DENOVO_MODELS)
+    mix_refit_msk_models = expand({models}, models=best_models.BEST_MSK_REFIT_MODELS)
+
+    mix_BRCA_downsampled_models = expand({models}, models=best_models.BEST_BRCA_DS_MODELS)
+    mix_BRCA_panel_models = expand({models}, models=best_models.BEST_BRCA_PANEL_MODELS)
+    mix_BRCA_full_panel_models = expand({models}, models=best_models.BEST_BRCA_FULL_PANEL_MODELS)
+
+    mix_OV_downsampled_models = expand({models}, models=best_models.BEST_OV_DS_MODELS)
+    mix_OV_panel_models = expand({models}, models=best_models.BEST_OV_PANEL_MODELS)
+
+    mix_synthetic_models = expand({models}, models=best_models.BEST_SYNTHETIC_MODELS)
+
+
 ### Results files
 results_RE_files = expand(os.path.join(RESULTS_DIR, 'RE', '{dataset}_{error}.tsv'),
                             dataset=['BRCA', 'OV'], error=['mutations', 'exposures'])
@@ -59,12 +79,20 @@ results_clusters_quality_files = expand(os.path.join(RESULTS_DIR, 'clusters_qual
 
 rule all:
     input:
-        mix_BRCA_full_panel_models,
         results_RE_files,
         results_ami_files,
         results_bic_files,
         results_sig_similarity_files,
-        results_synthetic_files,
+        results_hrd_files,
+        results_clusters_quality_files,
+        results_synthetic_files
+
+rule all_no_synthetic:
+    input:
+        results_RE_files,
+        results_ami_files,
+        results_bic_files,
+        results_sig_similarity_files,
         results_hrd_files,
         results_clusters_quality_files
 
@@ -195,7 +223,7 @@ rule denovo_train:
         mix_num_signatures = '{wildcards.mix_num_signature}',
         seeds = '{wildcards.seed}'
     shell:
-        'python main.py train_model --dataset {wildcards.dataset} --num_clusters {wildcards.mix_num_clusters} --use_cosmic 0 --num_signatures {wildcards.mix_num_signatures} --random_seed {wildcards.seed} --max_iterations 1'
+        'python main.py train_model --dataset {wildcards.dataset} --num_clusters {wildcards.mix_num_clusters} --use_cosmic 0 --num_signatures {wildcards.mix_num_signatures} --random_seed {wildcards.seed} --max_iterations {max_iterations}'
 
 
 rule refit_train:
@@ -207,4 +235,4 @@ rule refit_train:
         mix_num_signatures = '{wildcards.mix_num_signature}',
         seeds = '{wildcards.seed}'
     shell:
-        'python main.py train_model --dataset {wildcards.dataset} --num_clusters {wildcards.mix_num_clusters} --use_cosmic 1 --num_signatures {wildcards.mix_num_signatures} --random_seed {wildcards.seed} --max_iterations 1'
+        'python main.py train_model --dataset {wildcards.dataset} --num_clusters {wildcards.mix_num_clusters} --use_cosmic 1 --num_signatures {wildcards.mix_num_signatures} --random_seed {wildcards.seed} --max_iterations {max_iterations}'
