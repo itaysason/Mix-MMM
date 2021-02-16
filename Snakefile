@@ -3,7 +3,7 @@ from src.constants import ROOT_DIR
 
 
 # Parameters
-fast = False
+fast = True # True - run the best seed for each model. False - run all 10 seeds for each model.
 max_iterations = 1000
 
 random_seeds = [140296, 142857, 314179, 847662, 3091985, 28021991, 554433, 123456, 654321, 207022]

@@ -4,7 +4,7 @@
 
 ```sh
 conda env create -f environment.yml
-source activate MIX-MMM
+source activate Mix-env
 ```
 
 ### Training the model
@@ -56,7 +56,7 @@ snakemake all -j{num_cores}
 ```
 
 This will take a long time because each model is trained 10 times, so to save time and train only the best seed for
-each model, first change the False in line 6 in Snakefile to True.
+each model, first change the False in line 6 in Snakefile to True (default is True).
 This will reduce running time by 10x, but still might take a long time, so if you are willing to drop the synthetic data
 results you can run:
 

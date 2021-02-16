@@ -1,4 +1,4 @@
-name: MIX-MMM
+name: Mix-env
 
 channels:
   - conda-forge
