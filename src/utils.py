@@ -193,13 +193,13 @@ def get_data(dataset, threshold=100):
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 3, 5, 6, 8, 13, 17, 18, 20, 26, 30]
     elif 'msk2018-LUAD' == dataset:
-        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
+        counts_path = os.path.join(ROOT_DIR, 'data/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -213,13 +213,13 @@ def get_data(dataset, threshold=100):
         data = np.array(df)[indices, 1:].astype('float')
         active_signatures = [1, 2, 4, 5, 6, 13, 17]
     elif 'msk2018-LUAD-labels' == dataset:
-        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']
         df = df[df['durable_clinical_benefit'] != 'NE']
         samples = df['patient_id'].values
-        counts_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
+        counts_path = os.path.join(ROOT_DIR, 'data/panel_nsclc_pd1_msk_2018/count96_nsclc_pd1_msk_2018.tsv')
         df = pd.read_csv(counts_path, sep='\t')
         count_samples = df['Unnamed: 0'].values
         new_samples = []
@@ -230,7 +230,7 @@ def get_data(dataset, threshold=100):
                     indices.append(i)
                     new_samples.append(s)
                     continue
-        metadata_path = os.path.join(ROOT_DIR, 'data/tmp/immunotherapy_response/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
+        metadata_path = os.path.join(ROOT_DIR, 'data/panel_nsclc_pd1_msk_2018/labels_nsclc_pd1_2018.tsv')
         df = pd.read_csv(metadata_path, sep='\t')
         df = df[df['oncotree_code'] == 'LUAD']
         df = df[df['treatment_type'] == 'Monotherapy']

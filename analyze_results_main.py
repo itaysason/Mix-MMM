@@ -110,12 +110,13 @@ def ROC_HRD():
     test_data_samples = test_labels != 0
     test_labels = test_labels[test_data_samples]
     test_labels[test_labels == -1] += 1
-    models = ['MIX Sig3', 'SigMA', 'TMB', 'NNLS Sig3']
+    # models = ['MIX Sig3', 'SigMA', 'TMB', 'NNLS Sig3', 'WGS Sig3']
+    models = ['MIX Sig3', 'SigMA', 'NNLS Sig3']
     scores = []
     for model in models:
         if 'MIX Sig3' in model:
             # MIX
-            directory = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/refit')
+            directory = os.path.join(ROOT_DIR, 'experiments/trained_models/BRCA-panel/refit')
             mix = get_best_model(directory, return_model=True)
             test_data = mix.weighted_exposures(test_mutations)
 
@@ -129,14 +130,20 @@ def ROC_HRD():
             # In case this is comma separated
             if len(all_df.columns) == 1:
                 all_df = pd.read_csv(sigma_output, sep=',')
-            test_data = all_df[['exp_sig3']].values
+            test_data = all_df[['Signature_3_mva']].values
             # test_data = all_df[['Signature_3_mva']].values
 
         elif model == 'TMB':
             test_data = test_mutations.sum(1, keepdims=True)
 
+        elif model == 'WGS Sig3':
+            # NNLS on WGS
+            a, _ = get_data('nature2019-full')
+            test_data = stack_nnls(a, get_cosmic_signatures()[signatures])
+            test_data = test_data[:, [2]]
+
         else:
-            # NNLS
+            # NNLS on panel
             test_data = stack_nnls(test_mutations, get_cosmic_signatures()[signatures])
             test_data = test_data[:, [2]]
 

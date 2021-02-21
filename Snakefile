@@ -73,7 +73,7 @@ results_bic_files = expand(os.path.join(RESULTS_DIR, 'BIC', 'MSK-ALL-{t}.pdf'), 
 results_hrd_files = os.path.join(RESULTS_DIR, 'HRD', 'ROC_HRD.pdf')
 results_sig_similarity_files = expand(os.path.join(RESULTS_DIR, 'signatures_similarity', '{t}-signatures.pdf'), t=range(4, 12))
 results_synthetic_files = expand(os.path.join(RESULTS_DIR, 'synthetic', 'simulated_{a}_{b}_6_10000', 'summary.tsv'), a=range(8, 11), b=range(4, 7))
-results_immunotherapy_files = os.path.join(RESULTS_DIR, 'HRD', 'ROC_immunotherapy.pdf')
+results_immunotherapy_files = os.path.join(RESULTS_DIR, 'immunotherapy', 'ROC_immunotherapy.pdf')
 results_clusters_quality_files = expand(os.path.join(RESULTS_DIR, 'clusters_quality', 'clusters_quality.pdf'))
 
 
@@ -85,6 +85,7 @@ rule all:
         results_sig_similarity_files,
         results_hrd_files,
         results_clusters_quality_files,
+        results_immunotherapy_files,
         results_synthetic_files
 
 rule all_no_synthetic:
@@ -94,7 +95,8 @@ rule all_no_synthetic:
         results_bic_files,
         results_sig_similarity_files,
         results_hrd_files,
-        results_clusters_quality_files
+        results_clusters_quality_files,
+        results_immunotherapy_files
 
 rule data_prep:
     input:

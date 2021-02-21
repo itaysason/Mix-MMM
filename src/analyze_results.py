@@ -718,7 +718,8 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
 
 def compare_panel_clusters():
     np.random.seed(1359)
-    full_dataset, panel_dataset = 'BRCA-panel-full', 'BRCA-panel'
+    # full_dataset, panel_dataset = 'BRCA-panel-full', 'BRCA-panel'
+    full_dataset, panel_dataset = 'nature2019-full', 'nature2019-panel'
     full_data, active_signatures = get_data(full_dataset)
     panel_data, _ = get_data(panel_dataset)
     signatures = get_cosmic_signatures()[active_signatures]
@@ -733,14 +734,18 @@ def compare_panel_clusters():
 
     for model in ['MIX', 'SigMA']:
         if model == 'MIX':
-            d = os.path.join(ROOT_DIR, 'experiments/trained_models/{}/refit'.format(panel_dataset))
+            d = os.path.join(ROOT_DIR, 'experiments/trained_models/{}/refit'.format('BRCA-panel'))
 
             mix = get_model(load_json(get_best_model(d))['parameters'])
             clusters = np.argmax(mix.soft_cluster(full_data), 1)
 
         elif model == 'SigMA':
-            d = os.path.join(ROOT_DIR, 'data/ICGC-BRCA/out-sigma-brca-panel.tsv')
-            all_df = pd.read_csv(d, sep=',')
+            # d = os.path.join(ROOT_DIR, 'data/ICGC-BRCA/out-sigma-brca-panel.tsv')
+            d = os.path.join(ROOT_DIR, 'data/nature2019/SigMA_output.tsv')
+            all_df = pd.read_csv(d, sep='\t')
+            # In case this is comma separated
+            if len(all_df.columns) == 1:
+                all_df = pd.read_csv(d, sep=',')
             clusters = all_df['categ'].values
             unique_clusters = np.unique(clusters)
             cluster_to_num = {}
@@ -769,8 +774,8 @@ def compare_panel_clusters():
         corrs.extend(dists_in_clusters)
         corrs.extend(dists_out_clusters)
         models.extend([model] * len(dists_out_clusters) * 2)
-        relations.extend(['inter-cluster pairs'] * len(dists_out_clusters))
         relations.extend(['intra-cluster pairs'] * len(dists_out_clusters))
+        relations.extend(['inter-cluster pairs'] * len(dists_out_clusters))
 
         print(model, len(np.unique(clusters)))
         print(ranksums(dists_in_clusters, dists_out_clusters), np.mean(dists_in_clusters), np.mean(dists_out_clusters))
