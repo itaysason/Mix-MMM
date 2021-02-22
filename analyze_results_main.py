@@ -167,7 +167,7 @@ def ROC_HRD():
 
 @simple_cli.command('ROC_immunotherapy', short_help='Train and save model')
 def ROC_immunotherapy():
-    from src.analyze_results import get_best_model, stack_nnls
+    from src.analyze_results import get_best_model, stack_nnls, get_signatures_correlations
     import matplotlib.pyplot as plt
     from src.utils import get_data, get_cosmic_signatures
     from sklearn.metrics import roc_curve
@@ -206,7 +206,11 @@ def ROC_immunotherapy():
 
             if 'normalized' not in model:
                 test_data *= test_mutations.sum(1, keepdims=True)  # un-normalizing exposures
-            test_data = test_data[:, [4]]
+
+            sig4 = get_cosmic_signatures()[sigs][[3]]
+            _, corrs = get_signatures_correlations(mix.e, sig4)
+            best_sig = np.argmax(corrs)
+            test_data = test_data[:, [best_sig]]
 
         elif model == 'TMB':
             test_data = test_mutations.sum(1, keepdims=True)
