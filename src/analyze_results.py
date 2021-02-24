@@ -145,13 +145,13 @@ def compute_RE_from_mutations(mutations1, mutations2, signatures):
     normalized_mutations2 = mutations2 / mutations2.sum(1, keepdims=True)
     out = np.zeros(len(mutations1))
     for i in range(len(mutations1)):
-        for j in range(mutations1.shape[1]):
-            if normalized_mutations1[i, j] == 0:
-                continue
-            out[i] += normalized_mutations1[i, j] * np.log(normalized_mutations1[i, j])
-            if normalized_mutations2[i, j] != 0:
-                out[i] -= normalized_mutations1[i, j] * np.log(normalized_mutations2[i, j])
-        # out[i] = np.sum(np.abs(normalized_mutations1[i] - normalized_mutations2[i]))
+        # for j in range(mutations1.shape[1]):
+        #     if normalized_mutations1[i, j] == 0:
+        #         continue
+        #     out[i] += normalized_mutations1[i, j] * np.log(normalized_mutations1[i, j])
+        #     if normalized_mutations2[i, j] != 0:
+        #         out[i] -= normalized_mutations1[i, j] * np.log(normalized_mutations2[i, j])
+        out[i] = np.sum(np.abs(normalized_mutations1[i] - normalized_mutations2[i]))
     return out
 
 
