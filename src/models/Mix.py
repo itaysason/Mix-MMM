@@ -219,7 +219,7 @@ class Mix:
         expected_w, log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step()
         log_likelihood = prev_log_likelihood
         for iteration in range(self.max_iter):
-            print(iteration, log_likelihood)
+            # print(iteration, log_likelihood)
             # maximization step
             self.w, self.pi, self.e = self.maximization_step(expected_w, log_expected_pi, log_expected_e, params)
 

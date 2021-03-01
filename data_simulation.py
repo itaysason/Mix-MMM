@@ -4,6 +4,7 @@ from src.utils import get_model, load_json
 from src.constants import ROOT_DIR
 import numpy as np
 from src.models.Mix import Mix
+from src.utils import get_data
 import os
 
 
@@ -20,15 +21,18 @@ def simple_cli(debug, verbosity):
 @simple_cli.command('simulate', short_help='Simulate data using MIX')
 @click.option('--num_clusters', type=int)
 @click.option('--num_signatures', type=int)
-@click.option('--avg_num_mut', type=int)
 @click.option('--num_samples', type=int)
-def simulate(num_clusters, num_signatures, avg_num_mut, num_samples):
-    np.random.seed(3141592)
+@click.option('--random_seed', type=int)
+def simulate(num_clusters, num_signatures, num_samples, random_seed):
+    np.random.seed(random_seed)
     base_model = get_model(load_json(os.path.join(ROOT_DIR, 'data', 'simulated-data', 'base_model.json'))['parameters'])
     if num_clusters > base_model.num_clusters:
         raise ValueError('num_clusters cannot be larger than base_model.num_clusters ({})'.format(base_model.num_clusters))
     if num_signatures > base_model.num_topics:
         raise ValueError('num_clusters cannot be larger than base_model.num_topics ({})'.format(base_model.num_topics))
+
+    msk_data, _ = get_data('MSK-ALL')
+    msk_sizes = np.sum(msk_data, 1).astype('int')
 
     clusters = np.random.choice(base_model.num_clusters, size=num_clusters, replace=False, p=base_model.w)
     pi = base_model.pi[clusters]
@@ -41,14 +45,10 @@ def simulate(num_clusters, num_signatures, avg_num_mut, num_samples):
     pi /= pi.sum(1, keepdims=True)
     e = base_model.e[signatures]
     model = Mix(num_clusters, num_signatures, init_params={'w': w, 'pi': pi, 'e': e})
-    sample_sizes = np.random.poisson(avg_num_mut, num_samples)
-    while np.min(sample_sizes) == 0:
-        bad_samples = np.where(sample_sizes == 0)[0]
-        num_bad_samples = len(bad_samples)
-        sample_sizes[bad_samples] = np.random.poisson(avg_num_mut, num_bad_samples)
+    sample_sizes = np.random.choice(msk_sizes, num_samples)
     clusters, signatures, mutations = model.sample(sample_sizes)
 
-    curr_dir = os.path.join(ROOT_DIR, 'data', 'simulated-data', '{}_{}_{}_{}'.format(num_clusters, num_signatures, avg_num_mut, num_samples))
+    curr_dir = os.path.join(ROOT_DIR, 'data', 'simulated-data', '{}_{}_{}_{}'.format(num_clusters, num_signatures, num_samples, random_seed))
     try:
         os.makedirs(curr_dir)
     except OSError:
