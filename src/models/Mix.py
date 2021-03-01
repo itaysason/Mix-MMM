@@ -51,35 +51,7 @@ class Mix:
             self.w /= self.w.sum()
 
     def set_data(self, data):
-        # # find duplicate samples
-        # tmp = []
-        # data_argmax = np.argmax(data, 1)
-        # data_num_mutations = np.sum(data, 1)
-        # tmp_argmax = []
-        # tmp_num_mutations = []
-        # num_duplicates = []
-        # for i, sample in enumerate(data):
-        #     flag = 1
-        #     for j, uni in enumerate(tmp):
-        #         if data_argmax[i] == tmp_argmax[j] and data_num_mutations[i] == tmp_num_mutations[j]:
-        #             if np.all(sample == uni):
-        #                 flag = 0
-        #                 num_duplicates[j] += 1
-        #                 continue
-        #     if flag:
-        #         tmp.append(sample)
-        #         tmp_argmax.append(data_argmax[i])
-        #         tmp_num_mutations.append(data_num_mutations[i])
-        #         num_duplicates.append(1)
-        # tmp = np.array(tmp)
-        #
-        # self.start_samples = np.zeros(len(tmp), dtype='int')
-        # self.end_samples = np.zeros(len(tmp), dtype='int')
-        # self.end_samples[0] = num_duplicates[0]
-        # for i in range(1, len(tmp)):
-        #     self.start_samples =
-        # self.num_samples = len(data)
-        self.data = data
+        self.data = data.copy()
         self.log_data = np.log(data)
         if self.num_words is None:
             self.num_words = data.shape[1]
@@ -87,10 +59,10 @@ class Mix:
             if self.num_words != data.shape[1]:
                 raise ValueError('data and the given topics shapes, {}, {}, do not match', data.shape, self.e.shape)
 
-    def pre_expectation_step(self):
+    def slow_pre_expectation_step(self):
         num_samples = self.data.shape[0]
         num_clusters, num_topics, num_words = self.num_clusters, self.num_topics, self.num_words
-        log_likelihood = np.zeros((num_samples, num_clusters))
+        log_likelihood = np.zeros((num_clusters, num_samples))
         log_expected_e = np.zeros((num_clusters, num_samples, num_topics, num_words))
         log_expected_pi = np.zeros((num_clusters, num_samples, num_topics))
         log_e = self.e
@@ -100,7 +72,7 @@ class Mix:
                 curr_log_b = self.log_data[n]
                 curr_b = self.data[n]
                 log_prob_word = logsumexp(log_prob_topic_word, axis=0)
-                log_likelihood[n, l] = np.inner(log_prob_word, curr_b)
+                log_likelihood[l, n] = np.inner(log_prob_word, curr_b)
 
                 log_expected_e[l, n] = log_prob_topic_word + curr_log_b - log_prob_word
 
@@ -108,18 +80,36 @@ class Mix:
 
         return log_expected_pi, log_expected_e, log_likelihood
 
-    def expectation_step(self):
-        expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
+    def pre_expectation_step(self):
+        num_samples = self.data.shape[0]
+        num_clusters, num_topics, num_words = self.num_clusters, self.num_topics, self.num_words
+        log_likelihood = np.zeros((num_clusters, num_samples))
+        log_expected_e = np.zeros((num_clusters, num_samples, num_topics, num_words))
+        log_expected_pi = np.zeros((num_clusters, num_samples, num_topics))
+        log_e = self.e
+        for l, log_pi in enumerate(self.pi):
+            log_prob_topic_word = (log_e.T + log_pi).T
+            log_prob_word = logsumexp(log_prob_topic_word, axis=0)
 
-        likelihood_sample_cluster += self.w
-        tmp = logsumexp(likelihood_sample_cluster, 1, keepdims=True)
+            log_likelihood[l] = np.dot(self.data, log_prob_word)
+            tmp = self.log_data - log_prob_word[np.newaxis, :]
+            log_expected_e[l] = log_prob_topic_word[np.newaxis, :, :] + tmp[:, np.newaxis, :]
+            log_expected_pi[l] = logsumexp(log_expected_e[l], axis=-1)
+
+        return log_expected_pi, log_expected_e, log_likelihood
+
+    def expectation_step(self):
+        expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_cluster_sample = self.pre_expectation_step()
+
+        likelihood_cluster_sample += self.w[:, np.newaxis]
+        tmp = logsumexp(likelihood_cluster_sample, 0, keepdims=True)
         log_likelihood = np.sum(tmp)
-        likelihood_sample_cluster -= tmp
-        expected_pi_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis]
-        expected_e_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis, np.newaxis]
+        likelihood_cluster_sample -= tmp
+        expected_pi_sample_cluster += likelihood_cluster_sample[:, :, np.newaxis]
+        expected_e_sample_cluster += likelihood_cluster_sample[:, :, np.newaxis, np.newaxis]
         log_expected_pi = logsumexp(expected_pi_sample_cluster, 1)
         log_expected_e = logsumexp(expected_e_sample_cluster, (0, 1))
-        expected_w = logsumexp(likelihood_sample_cluster, 0)
+        expected_w = logsumexp(likelihood_cluster_sample, 1)
         return expected_w, log_expected_pi, log_expected_e, log_likelihood
 
     def maximization_step(self, log_expected_w, log_expected_pi, log_expected_e, params):
@@ -226,11 +216,10 @@ class Mix:
         self.pi = np.log(self.pi)
         self.w = np.log(self.w)
         self.e = np.log(self.e)
-
         expected_w, log_expected_pi, log_expected_e, prev_log_likelihood = self.expectation_step()
         log_likelihood = prev_log_likelihood
         for iteration in range(self.max_iter):
-            # print(iteration, log_likelihood)
+            print(iteration, log_likelihood)
             # maximization step
             self.w, self.pi, self.e = self.maximization_step(expected_w, log_expected_pi, log_expected_e, params)
 

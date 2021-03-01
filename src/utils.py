@@ -274,7 +274,7 @@ def get_data(dataset, threshold=100):
             data = data[num_samples // 2:]
 
     active_signatures = np.array(active_signatures) - 1
-    return data, active_signatures
+    return data.copy(), active_signatures
 
 
 def get_model(parameters):
