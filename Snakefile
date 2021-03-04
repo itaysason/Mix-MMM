@@ -12,8 +12,8 @@ TRAINED_MODELS = os.path.join(ROOT_DIR, 'experiments', 'trained_models')
 RESULTS_DIR = os.path.join(ROOT_DIR, 'results')
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 
-synthetic_data = expand(os.path.join(DATA_DIR, 'simulated-data/{num_clusters}_{num_sigs}_{avg_mut}_{num_samples}/mutations.npy'),
-        num_clusters=[8, 9, 10], num_sigs=[4, 5, 6], avg_mut=[6], num_samples=[10000])
+synthetic_data = expand(os.path.join(DATA_DIR, 'simulated-data/{num_clusters}_{num_sigs}_{num_samples}_{seeds}/mutations.npy'),
+        num_clusters=[5, 6, 7, 8, 9], num_sigs=[4], num_samples=[5000], seeds=[140296])
 
 mix_num_clusters = range(1, 21)
 mix_num_sigs = range(1, 12)
@@ -26,13 +26,13 @@ mix_denovo_msk_models = expand(os.path.join(TRAINED_MODELS, 'MSK-ALL/denovo/mix_
 mix_refit_msk_models = expand(os.path.join(TRAINED_MODELS, 'MSK-ALL/refit/mix_{mix_cluster}clusters_017signatures/{seed}seed.json'),
                             mix_cluster=mix_num_clusters, seed=random_seeds)
 
-mix_num_clusters = range(1, 11)
-mix_num_sigs = range(1, 11)
+mix_num_clusters = range(4, 10)
+mix_num_sigs = range(3, 6)
 mix_num_clusters = [str(a).zfill(3) for a in mix_num_clusters]
 mix_num_sigs = [str(a).zfill(3) for a in mix_num_sigs]
 
-mix_synthetic_models = expand(os.path.join(TRAINED_MODELS, 'simulated_{a}_{b}_6_10000/denovo/mix_{mix_cluster}clusters_{mix_sig}signatures/{seed}seed.json'),
-                            a=[8, 9, 10], b=[4, 5, 6], mix_cluster=mix_num_clusters, mix_sig=mix_num_sigs, seed=random_seeds)
+mix_synthetic_models = expand(os.path.join(TRAINED_MODELS, 'simulated_{a}_{b}_5000_140296/denovo/mix_{mix_cluster}clusters_{mix_sig}signatures/{seed}seed.json'),
+                            a=[5, 6, 7, 8, 9], b=[4], mix_cluster=mix_num_clusters, mix_sig=mix_num_sigs, seed=random_seeds)
 
 mix_num_clusters = range(1, 5)
 mix_num_clusters = [str(a).zfill(3) for a in mix_num_clusters]

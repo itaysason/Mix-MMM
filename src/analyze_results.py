@@ -601,7 +601,6 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
     BIC_scores = scores_dict['BIC_scores']
     num_clusters = scores_dict['num_clusters']
     num_signatures = scores_dict['num_signatures']
-    model_paths = scores_dict['model_paths']
     # print(dataset, signature_learning, model_paths[np.argmin(BIC_scores)])
     unique_clusters = np.unique(num_clusters)
     unique_signaturs = np.unique(num_signatures)
@@ -643,7 +642,7 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
     # plt.show()
 
     ### Test sig/cluster/weight correlations
-    results = [['Model', '# Clusters', '# Signatures', 'BIC', 'Log-liklihood', 'Weights similarity', 'Worst cluster cs', 'Best cluster cs', 'Worst signature cs', 'Best signature cs', '# Unique clusters with cs > 0.8', '# Unique signatures with cs > 0.8']]
+    results = [['Model', 'Average clusters similarity', '# Unique clusters', 'Average signatures similarity', '# Unique signatures']]
     best_model = get_best_model(os.path.join(dataset_dir, 'denovo'), return_model=True)
     best_num_clusters, best_num_sigs = best_model.num_clusters, best_model.num_topics
 
@@ -670,7 +669,7 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
     # print(best_bic)
 
     # print(best_num_clusters, best_num_sigs, best_bic, best_model_ll, weight_corr, np.min(cluster_corr), np.max(cluster_corr), np.min(sig_corr), np.max(sig_corr), len(np.unique(cluster[cluster_corr > 0.8])), len(np.unique(sig[sig_corr > 0.8])))
-    results.append(['Best model', str(best_num_clusters), str(best_num_sigs), str(best_bic), str(best_model_ll), str(weight_corr), str(np.min(cluster_corr)), str(np.max(cluster_corr)), str(np.min(sig_corr)), str(np.max(sig_corr)), str(len(np.unique(cluster[cluster_corr > 0.8]))), str(len(np.unique(sig[sig_corr > 0.8])))])
+    results.append(['Mix ({}, {})'.format(best_num_clusters, best_num_sigs), str(np.mean(cluster_corr)), str(len(np.unique(cluster[cluster_corr > 0.8]))), str(np.mean(sig_corr)), str(len(np.unique(sig[sig_corr > 0.8])))])
 
     ### Test the same with the best model with the same parameters
     same_params_model = get_best_run(os.path.join(dataset_dir, 'denovo', 'mix_{}clusters_{}signatures'.format(str(original_num_clusters).zfill(3), str(original_num_sigs).zfill(3))))
@@ -698,22 +697,7 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
     # print(best_bic, same_params_bic, original_bic)
     # print(original_num_clusters, original_num_sigs, same_params_bic, same_params_ll, weight_corr, np.min(cluster_corr), np.max(cluster_corr), np.min(sig_corr), np.max(sig_corr), len(np.unique(cluster[cluster_corr > 0.8])), len(np.unique(sig[sig_corr > 0.8])))
     # print('-', '-', original_bic, original_model_ll, '-', '-', '-', '-', '-', '-', '-')
-    results.append(['Same parameters model', str(original_num_clusters), str(original_num_sigs), str(same_params_bic), str(same_params_ll), str(weight_corr), str(np.min(cluster_corr)), str(np.max(cluster_corr)), str(np.min(sig_corr)), str(np.max(sig_corr)), str(len(np.unique(cluster[cluster_corr > 0.8]))), str(len(np.unique(sig[sig_corr > 0.8])))])
-    results.append(['Original', '-', '-', str(original_bic), str(original_model_ll), '-', '-', '-', '-', '-', '-', '-'])
-
-
-    ###
-    nmf = learn_NMF(data, best_num_sigs, beta_loss=2)
-    sig, sig_corr = get_signatures_correlations(nmf, original_sigs)
-    # print('-', best_num_sigs, '-', '-', '-', '-', '-', np.min(sig_corr), np.max(sig_corr), '-', len(np.unique(sig[sig_corr > 0.8])))
-    results.append(['NMF - best number of signatures', '-', str(best_num_sigs), '-', '-', '-', '-', '-', str(np.min(sig_corr)), str(np.max(sig_corr)), '-', str(len(np.unique(sig[sig_corr > 0.8])))])
-
-    nmf = learn_NMF(data, original_num_sigs, beta_loss=2)
-    sig, sig_corr = get_signatures_correlations(nmf, original_sigs)
-    # print('-', original_num_sigs, '-', '-', '-', '-', '-', np.min(sig_corr), np.max(sig_corr), '-', len(np.unique(sig[sig_corr > 0.8])))
-    results.append(['NMF - same number of signatures', '-', str(original_num_sigs), '-', '-', '-', '-', '-', str(np.min(sig_corr)), str(np.max(sig_corr)), '-', str(len(np.unique(sig[sig_corr > 0.8])))])
-    results = np.array(results)
-    np.savetxt(os.path.join(ROOT_DIR, 'results', 'synthetic', dataset, 'summary.tsv'), results, fmt='%s', delimiter='\t', header='{} clusters | {} signatures'.format(original_num_clusters, original_num_sigs))
+    results.append(['Mix ({}, {})'.format(original_num_clusters, original_num_sigs), str(np.mean(cluster_corr)), str(len(np.unique(cluster[cluster_corr > 0.8]))), str(np.mean(sig_corr)), str(len(np.unique(sig[sig_corr > 0.8])))])
 
 
 def compare_panel_clusters():
