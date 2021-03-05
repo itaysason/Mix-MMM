@@ -282,9 +282,9 @@ class Mix:
         self.w = np.log(self.w)
         self.e = np.log(self.e)
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
-        likelihood_sample_cluster += self.w
-        likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 1, keepdims=True)
-        expected_pi_sample_cluster += likelihood_sample_cluster.T[:, :, np.newaxis]
+        likelihood_sample_cluster += self.w[:, np.newaxis]
+        likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 0, keepdims=True)
+        expected_pi_sample_cluster += likelihood_sample_cluster[:, :, np.newaxis]
         log_expected_topics = logsumexp(expected_pi_sample_cluster, 0)
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
@@ -299,8 +299,8 @@ class Mix:
         self.w = np.log(self.w)
         self.e = np.log(self.e)
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
-        likelihood_sample_cluster += self.w
-        likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 1, keepdims=True)
+        likelihood_sample_cluster += self.w[:, np.newaxis]
+        likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 0, keepdims=True)
         likelihood_sample_cluster = np.exp(likelihood_sample_cluster)
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
@@ -311,9 +311,9 @@ class Mix:
     def weighted_exposures(self, data):
         likelihood_sample_cluster = self.soft_cluster(data)
         exposures = np.zeros((len(data), self.num_topics))
-        for i in range(len(data)):
-            for j in range(self.num_clusters):
-                exposures[i] += likelihood_sample_cluster[i, j] * self.pi[j]
+        for i in range(self.num_clusters):
+            for j in range(len(data)):
+                exposures[j] += likelihood_sample_cluster[i, j] * self.pi[i]
         return exposures
 
     def get_params(self):
