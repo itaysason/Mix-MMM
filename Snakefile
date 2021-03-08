@@ -72,7 +72,7 @@ results_ami_files = expand(os.path.join(RESULTS_DIR, 'AMI', 'cluster_score_{t}.p
 results_bic_files = expand(os.path.join(RESULTS_DIR, 'BIC', 'MSK-ALL-{t}.pdf'), t=['denovo', 'refit'])
 results_hrd_files = os.path.join(RESULTS_DIR, 'HRD', 'ROC_HRD.pdf')
 results_sig_similarity_files = expand(os.path.join(RESULTS_DIR, 'signatures_similarity', '{t}-signatures.pdf'), t=range(4, 12))
-results_synthetic_files = expand(os.path.join(RESULTS_DIR, 'synthetic', 'simulated_{a}_{b}_6_10000', 'summary.tsv'), a=range(8, 11), b=range(4, 7))
+results_synthetic_files = expand(os.path.join(RESULTS_DIR, 'synthetic', 'simulated_{a}_{b}_{c}_{d}', 'summary.tsv'), a=range(5, 10), b=[4], c=[5000], d=[140296])
 results_immunotherapy_files = os.path.join(RESULTS_DIR, 'immunotherapy', 'ROC_immunotherapy.pdf')
 results_clusters_quality_files = expand(os.path.join(RESULTS_DIR, 'clusters_quality', 'clusters_quality.pdf'))
 
@@ -170,15 +170,17 @@ rule results_BIC:
 
 rule results_synthesized:
     output:
-        os.path.join(RESULTS_DIR, 'synthetic', 'simulated_{num_clusters}_{num_signatures}_6_10000', 'summary.tsv')
+        os.path.join(RESULTS_DIR, 'synthetic', 'simulated_{num_clusters}_{num_signatures}_{num_samples}_{seed}', 'summary.tsv')
     params:
         num_clusters = '{wildcards.num_clusters}',
-        num_signatures = '{wildcards.num_signatures}'
+        num_signatures = '{wildcards.num_signatures}',
+        num_samples = '{wildcards.num_samples}',
+        seed = '{wildcards.seed}',
     input:
         synthetic_data,
         mix_synthetic_models
     shell:
-        'python analyze_results_main.py analyze_synthetic --dataset simulated_{wildcards.num_clusters}_{wildcards.num_signatures}_6_10000'
+        'python analyze_results_main.py analyze_synthetic --dataset simulated_{wildcards.num_clusters}_{wildcards.num_signatures}_{wildcards.num_samples}_{wildcards.seed}'
 
 
 rule clusters_quality:
@@ -196,14 +198,14 @@ rule synthesize_data:
     input:
         os.path.join(DATA_DIR, 'simulated-data/base_model.json')
     output:
-        os.path.join(DATA_DIR, 'simulated-data/{num_clusters}_{num_sigs}_{avg_mut}_{num_samples}/mutations.npy')
+        os.path.join(DATA_DIR, 'simulated-data/{num_clusters}_{num_sigs}_{num_samples}_{seed}/mutations.npy')
     params:
         num_clusters = '{wildcards.num_clusters}',
         num_sigs = '{wildcards.num_sigs}',
-        avg_mut = '{wildcards.avg_mut}',
-        num_samples = '{wildcards.num_samples}'
+        num_samples = '{wildcards.num_samples}',
+        seed = '{wildcards.seed}'
     shell:
-        'python data_simulation.py simulate --num_clusters {wildcards.num_clusters} --num_signatures {wildcards.num_sigs} --avg_num_mut {wildcards.avg_mut} --num_samples {wildcards.num_samples}'
+        'python data_simulation.py simulate --num_clusters {wildcards.num_clusters} --num_signatures {wildcards.num_sigs} --num_samples {wildcards.num_samples} --random_seed {wildcards.seed}'
 
 
 rule create_synthetic_base_model:

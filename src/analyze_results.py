@@ -698,6 +698,7 @@ def simulated_data_analysis(dataset, trained_models_dir=def_trained_models_dir):
     # print(original_num_clusters, original_num_sigs, same_params_bic, same_params_ll, weight_corr, np.min(cluster_corr), np.max(cluster_corr), np.min(sig_corr), np.max(sig_corr), len(np.unique(cluster[cluster_corr > 0.8])), len(np.unique(sig[sig_corr > 0.8])))
     # print('-', '-', original_bic, original_model_ll, '-', '-', '-', '-', '-', '-', '-')
     results.append(['Mix ({}, {})'.format(original_num_clusters, original_num_sigs), str(np.mean(cluster_corr)), str(len(np.unique(cluster[cluster_corr > 0.8]))), str(np.mean(sig_corr)), str(len(np.unique(sig[sig_corr > 0.8])))])
+    np.savetxt(os.path.join(ROOT_DIR, 'results', 'synthetic', dataset, 'summary.tsv'), results, fmt='%s', delimiter='\t', header='{} clusters | {} signatures'.format(original_num_clusters, original_num_sigs))
 
 
 def compare_panel_clusters():
