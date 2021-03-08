@@ -158,8 +158,8 @@ def ROC_HRD():
         sns.lineplot(fpr, tpr, ci=None)
 
     plt.legend(models, loc='lower right')
-    plt.xlabel('FN')
-    plt.ylabel('TP')
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
     plt.savefig(os.path.join(ROOT_DIR, 'results', 'HRD', 'ROC_HRD.pdf'))
     # plt.show()
     np.savetxt(os.path.join(ROOT_DIR, 'results', 'HRD', 'ROC_AUC.tsv'), scores, '%s', '\t')
@@ -229,8 +229,8 @@ def ROC_immunotherapy():
         sns.lineplot(fpr, tpr, ci=None)
 
     plt.legend(models, loc='lower right')
-    plt.xlabel('FN')
-    plt.ylabel('TP')
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
     plt.savefig(os.path.join(ROOT_DIR, 'results', 'immunotherapy', 'ROC_immunotherapy.pdf'))
     # plt.show()
     np.savetxt(os.path.join(ROOT_DIR, 'results', 'immunotherapy', 'ROC_AUC.tsv'), scores, '%s', '\t')

@@ -301,7 +301,7 @@ class Mix:
         expected_pi_sample_cluster, expected_e_sample_cluster, likelihood_sample_cluster = self.pre_expectation_step()
         likelihood_sample_cluster += self.w[:, np.newaxis]
         likelihood_sample_cluster -= logsumexp(likelihood_sample_cluster, 0, keepdims=True)
-        likelihood_sample_cluster = np.exp(likelihood_sample_cluster)
+        likelihood_sample_cluster = np.exp(likelihood_sample_cluster.T)
         self.pi = np.exp(self.pi)
         self.e = np.exp(self.e)
         self.w = np.exp(self.w)
@@ -310,10 +310,7 @@ class Mix:
 
     def weighted_exposures(self, data):
         likelihood_sample_cluster = self.soft_cluster(data)
-        exposures = np.zeros((len(data), self.num_topics))
-        for i in range(self.num_clusters):
-            for j in range(len(data)):
-                exposures[j] += likelihood_sample_cluster[i, j] * self.pi[i]
+        exposures = np.dot(likelihood_sample_cluster, self.pi)
         return exposures
 
     def get_params(self):

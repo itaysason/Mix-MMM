@@ -758,15 +758,15 @@ def compare_panel_clusters():
         corrs.extend(dists_in_clusters)
         corrs.extend(dists_out_clusters)
         models.extend([model] * len(dists_out_clusters) * 2)
-        relations.extend(['intra-cluster pairs'] * len(dists_out_clusters))
-        relations.extend(['inter-cluster pairs'] * len(dists_out_clusters))
+        relations.extend(['Intra-cluster pairs'] * len(dists_out_clusters))
+        relations.extend(['Inter-cluster pairs'] * len(dists_out_clusters))
 
         print(model, len(np.unique(clusters)))
         print(ranksums(dists_in_clusters, dists_out_clusters), np.mean(dists_in_clusters), np.mean(dists_out_clusters))
 
-    df = {'cosine similarity': corrs, 'model': models, 'relation': relations}
+    df = {'Cosine similarity': corrs, 'model': models, 'relation': relations}
     df = pd.DataFrame(df)
-    sns.violinplot(x='relation', y='cosine similarity', hue='model', data=df, split=True, inner='stick')
+    sns.violinplot(x='relation', y='Cosine similarity', hue='model', data=df, split=True, inner='stick')
 
     plt.xlabel('')
     plt.savefig(os.path.join(ROOT_DIR, 'results', 'clusters_quality', 'clusters_quality.pdf'))
