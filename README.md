@@ -43,13 +43,13 @@ mix.refit(data)
 
 ### Reproducing paper results
 
-First to prepare the data run
+First to prepare the synthetic data run
 
 ```sh
 snakemake data_prep -j{num_cores}
 ```
 
-Then use the snakefile to reproduce all models used in the paper:
+This will train the Mix used for synthesizing data and synthesize the data. Then use the snakefile to reproduce all models used in the paper:
 
 ```sh
 snakemake all -j{num_cores}
@@ -64,7 +64,16 @@ results you can run:
 snakemake all_no_synthetic -j{num_cores}
 ```
 
-Another way to produce (most likely) similar results but faster is to
+To get all results it is actually recommended to run in the following order:
+
+```sh
+snakemake all_no_synthetic -j{num_cores}
+snakemake data_prep -j{num_cores}
+snakemake all -j{num_cores}
+```
+
+Here the first command will create most results and in the process will creat the Mix model used to synthesize data,
+thus better for parallelization. Another way to produce (most likely) similar results but faster is to
 change the default 1000 iterations in line 7 in Snakefile. This will reduce running time but will change the results
 (for better or worse). Also note that the best seeds were chosen using 1000 iterations and there is no guarantee they
 are the best seeds for other max_iterations.
