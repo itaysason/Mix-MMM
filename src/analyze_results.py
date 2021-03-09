@@ -222,6 +222,7 @@ def learn_NMF(data, num_sigs, beta_loss):
 def process_BIC(dataset, trained_models_dir=def_trained_models_dir, plot_title=True, save_plot=True):
     dataset_dir = os.path.join(trained_models_dir, dataset)
     for signature_learning in os.listdir(dataset_dir):
+        plt.clf()
         scores_dict = get_best_model(os.path.join(dataset_dir, signature_learning), return_params=True)
         BIC_scores = scores_dict['BIC_scores']
         num_clusters = scores_dict['num_clusters']
@@ -229,7 +230,7 @@ def process_BIC(dataset, trained_models_dir=def_trained_models_dir, plot_title=T
         model_paths = scores_dict['model_paths']
         print(dataset, signature_learning, model_paths[np.argmin(BIC_scores)])
         if signature_learning == 'refit':
-            print(num_clusters[np.argmin(BIC_scores)])
+            # print(num_clusters[np.argmin(BIC_scores)])
             plt.plot(num_clusters, BIC_scores)
             plt.xlabel('clusters')
             plt.ylabel('BIC')
@@ -369,6 +370,11 @@ def plot_cluster_AMI(range_clusters, computation='AMI'):
     sample_cancer_id_assignments = np.array(sample_cancer_id_assignments)
     shuffled_indices = np.arange(len(sample_cancer_assignments))
 
+    # Finding best_models
+    d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/denovo')
+    BIC_summary = get_best_model(d, return_params=True)
+    BIC_scores, BIC_clusters, BIC_paths = BIC_summary['BIC_scores'], BIC_summary['num_clusters'], BIC_summary['model_paths']
+
     MIX_scores = np.zeros((2, len(range_clusters)))
     MIX_soft_scores = np.zeros((2, len(range_clusters)))
     MIX_refit_scores = np.zeros((2, len(range_clusters)))
@@ -376,33 +382,9 @@ def plot_cluster_AMI(range_clusters, computation='AMI'):
     KMeans_scores = np.zeros((2, len(range_clusters)))
     NNLS_KMeans_scores = np.zeros((2, len(range_clusters)))
     for idx, num_clusters in enumerate(range_clusters):
-        # d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSKCC/denovo')
-        d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/denovo')
-        best_num_sigs = None
-        best_bic_score = np.inf
-        for model in os.listdir(d):
-            model_num_clusters = int(model.split('_')[1][:3])
-            model_num_sigs = int(model.split('_')[2][:3])
-            if num_clusters != model_num_clusters:
-                continue
-            experiment_dir = os.path.join(d, model)
-            runs = os.listdir(experiment_dir)
-            best_score = -np.inf
-            for run in runs:
-                total_score = load_json(os.path.join(experiment_dir, run))['log-likelihood']
-                if total_score > best_score:
-                    best_score = total_score
-            if len(runs) > 0:
-                num_params = (model_num_clusters - 1) + (model_num_sigs - 1) * model_num_clusters + (
-                        96 - 1) * model_num_sigs
-                bic_score = np.log(num_data_points) * num_params - 2 * best_score
-                if bic_score < best_bic_score:
-                    best_bic_score = bic_score
-                    best_num_sigs = model_num_sigs
+        best_model_path = BIC_paths[BIC_clusters == num_clusters][np.argmin(BIC_scores[BIC_clusters == num_clusters])]
 
-        d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/denovo/mix_{}clusters_{}signatures'.format(str(num_clusters).zfill(3), str(best_num_sigs).zfill(3)))
-
-        model = get_model(load_json(get_best_run(d))['parameters'])
+        model = get_model(load_json(best_model_path)['parameters'])
         MIX_soft_clustering = model.soft_cluster(data)
         sample_cluster_assignment_MIX = np.argmax(MIX_soft_clustering, 1)
         MIX_scores[0, idx] = score_func(sample_cancer_id_assignments, sample_cluster_assignment_MIX)
@@ -414,20 +396,20 @@ def plot_cluster_AMI(range_clusters, computation='AMI'):
                                                                    MIX_soft_clustering[rich_samples])
 
         # MIX refit
-        # d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/refit/mix_{}clusters_017signatures'.format(str(num_clusters).zfill(3)))
-        # model = get_model(load_json(get_best_run(d))['parameters'])
-        # MIX_refit_soft_clustering = model.soft_cluster(data)
-        # sample_cluster_assignment_MIX_refit = np.argmax(MIX_refit_soft_clustering, 1)
-        # MIX_refit_scores[0, idx] = score_func(sample_cancer_id_assignments, sample_cluster_assignment_MIX_refit)
-        # MIX_refit_scores[1, idx] = score_func(sample_cancer_id_assignments[rich_samples],
-        #                                           sample_cluster_assignment_MIX_refit[rich_samples])
-        # if computation == 'MI':
-        #     MIX_soft_refit_scores[0, idx] = MI_score_soft_clustering(sample_cancer_id_assignments, MIX_refit_soft_clustering)
-        #     MIX_soft_refit_scores[1, idx] = MI_score_soft_clustering(sample_cancer_id_assignments[rich_samples],
-        #                                                                  MIX_refit_soft_clustering[rich_samples])
+        d = os.path.join(ROOT_DIR, 'experiments/trained_models/MSK-ALL/refit/mix_{}clusters_017signatures'.format(str(num_clusters).zfill(3)))
+        model = get_model(load_json(get_best_run(d))['parameters'])
+        MIX_refit_soft_clustering = model.soft_cluster(data)
+        sample_cluster_assignment_MIX_refit = np.argmax(MIX_refit_soft_clustering, 1)
+        MIX_refit_scores[0, idx] = score_func(sample_cancer_id_assignments, sample_cluster_assignment_MIX_refit)
+        MIX_refit_scores[1, idx] = score_func(sample_cancer_id_assignments[rich_samples],
+                                                  sample_cluster_assignment_MIX_refit[rich_samples])
+        if computation == 'MI':
+            MIX_soft_refit_scores[0, idx] = MI_score_soft_clustering(sample_cancer_id_assignments, MIX_refit_soft_clustering)
+            MIX_soft_refit_scores[1, idx] = MI_score_soft_clustering(sample_cancer_id_assignments[rich_samples],
+                                                                         MIX_refit_soft_clustering[rich_samples])
 
         # KMeans clustering
-        cluster_model = KMeans(num_clusters, n_init=100)
+        cluster_model = KMeans(num_clusters, n_init=100, random_state=140296)
         np.random.shuffle(shuffled_indices)
         shuffled_data = data[shuffled_indices]
         cluster_model.fit(shuffled_data)
@@ -437,7 +419,7 @@ def plot_cluster_AMI(range_clusters, computation='AMI'):
                                                kmeans_clusters[rich_samples])
 
         # NNLS + KMeans clustering
-        cluster_model = KMeans(num_clusters, n_init=100)
+        cluster_model = KMeans(num_clusters, n_init=100, random_state=140296)
         np.random.shuffle(shuffled_indices)
         shuffled_data = nnls_exposures[shuffled_indices]
         cluster_model.fit(shuffled_data)

@@ -20,7 +20,7 @@ The code can easily be changed to support more datasets as well as getting a fil
 
 Developers can load data and precomputed signatures in anyway they want and use as follow
 
-##### Denovo training
+Denovo training:
 
 ```sh
 from src.models.Mix import Mix
@@ -30,7 +30,7 @@ mix = MIX(num_clusters, num_topics)
 mix.fit(data) 
 ```
 
-##### Refit training
+Refit training:
 
 ```sh
 from src.models.Mix import Mix
@@ -40,6 +40,35 @@ signatures # Loaded signatures in ndarray (signatures, mutations)
 mix = MIX(num_clusters, num_topics, init_params={e: signatures})
 mix.refit(data) 
 ```
+
+Loading model from experiment file:
+
+```sh
+from src.utils import get_model, load_json
+
+# Example for a path - 'experiments/{dataset}/{mode}/{settings}/{seed}.json'
+mix = get_model(load_json(path_to_experiment_file)['parameters'])
+```
+
+Loading best seed under some settings:
+
+```sh
+from src.utils import get_model, load_json
+from src.analyze_results import get_best_run
+
+# Example for a path - 'experiments/{dataset}/{mode}/{settings}'
+mix = get_model(load_json(get_best_run(path_to_settings))['parameters'])
+```
+
+Loading best model using BIC:
+
+```sh
+from src.analyze_results import get_best_model
+
+# Example for a path - 'experiments/{dataset}/{mode}'
+mix = get_best_model(path, return_model=True)
+```
+
 
 ### Reproducing paper results
 
